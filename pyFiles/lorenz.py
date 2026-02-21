@@ -9,34 +9,37 @@ sigma = 10.0
 rho   = 28.0
 beta  = 8.0 / 3.0
 
-def lorenz(state, dt):
-    x, y, z = state
-    dx = sigma * (y - x)
-    dy = x * (rho - z) - y
-    dz = x * y - beta * z
-    return np.array([x + dx * dt,
-                     y + dy * dt,
-                     z + dz * dt])
-
 # Initial conditions and time setup
 dt    = 0.01
 steps = 10000
-state = np.array([0.1, 0.0, 0.0])
+state = np.array([0.1, 0.0, 0.0], dtype=np.float64)
 
-# Integrate using simple Euler method
-trajectory = np.empty((steps, 3))
+# Integrate using inlined Euler — avoids per-step np.array() allocation
+trajectory = np.empty((steps, 3), dtype=np.float64)
 for i in range(steps):
-    state = lorenz(state, dt)
+    x, y, z  = state[0], state[1], state[2]
+    state[0] = x + sigma * (y - x)     * dt
+    state[1] = y + (x * (rho - z) - y) * dt
+    state[2] = z + (x * y - beta * z)  * dt
     trajectory[i] = state
 
-# Build (N-1) segments for gradient coloring
-points   = trajectory.reshape(-1, 1, 3)
-segments = np.concatenate([points[:-1], points[1:]], axis=1)  # (9999, 2, 3)
-t_color  = np.linspace(0.0, 1.0, len(segments))
+# Build 200 chunked polylines instead of 9999 two-point segments.
+# Line3DCollection accepts (M, 3) polylines — depth-sort drops from O(9999) to O(200).
+# Chunks must have uniform size to avoid array shape mismatch errors.
+n_chunks   = 200
+chunk_size = steps // n_chunks   # 50 (divides evenly)
+
+chunks = []
+for i in range(n_chunks):
+    start = i * chunk_size
+    end = min(start + chunk_size, steps)
+    chunks.append(trajectory[start:end])
+
+t_colors = np.linspace(0.0, 1.0, n_chunks)
 
 norm = mcolors.Normalize(vmin=0.0, vmax=1.0)
-lc   = Line3DCollection(segments, cmap='inferno', norm=norm, linewidth=0.5, alpha=0.9)
-lc.set_array(t_color)
+lc   = Line3DCollection(chunks, cmap='inferno', norm=norm, linewidth=0.5)
+lc.set_array(t_colors)
 
 # Figure with dark background
 fig = plt.figure(figsize=(10, 7), facecolor='#0a0a0a')
