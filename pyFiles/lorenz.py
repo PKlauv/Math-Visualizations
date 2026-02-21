@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+from matplotlib.widgets import Button
+import webbrowser
+import os
+import pathlib
 
 # Lorenz system parameters
 sigma = 10.0
@@ -86,4 +90,21 @@ def on_scroll(event):
 fig.canvas.mpl_connect('scroll_event', on_scroll)
 
 plt.tight_layout()
+
+# "Learn More" button — opens educational HTML page in browser
+btn_ax = fig.add_axes([0.78, 0.02, 0.18, 0.06])
+learn_btn = Button(btn_ax, 'Learn More', color='#1a1a2e', hovercolor='#e25822')
+learn_btn.label.set_color('white')
+learn_btn.label.set_fontsize(10)
+learn_btn.label.set_fontweight('bold')
+for spine in btn_ax.spines.values():
+    spine.set_edgecolor('#e25822')
+    spine.set_linewidth(0.8)
+
+def open_learn_more(event):
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'lorenz_info.html')
+    webbrowser.open(pathlib.Path(html_path).as_uri())
+
+learn_btn.on_clicked(open_learn_more)
+
 plt.show()

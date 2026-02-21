@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lorenz Attractor</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<style>
+:root {
+    --bg: #101010;
+    --bg-surface: #181818;
+    --border: #282828;
+    --text: #d4d4d4;
+    --text-dim: #888;
+    --accent: #c8a26a;
+    --font-body: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    --font-ui: 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'Cascadia Code', 'Consolas', monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+/* layout */
+.container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 28px;
+}
+
+/* header */
+header {
+    padding: 80px 0 48px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+header h1 {
+    font-family: var(--font-body);
+    font-size: 2.4rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    color: #eee;
+    margin-bottom: 8px;
+}
+header .tagline {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* sections */
+.section {
+    padding: 52px 0;
+    border-bottom: 1px solid var(--border);
+}
+.section:last-of-type {
+    border-bottom: none;
+}
+.section-label {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+h2 {
+    font-family: var(--font-body);
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #eee;
+    margin-bottom: 20px;
+}
+p {
+    margin-bottom: 16px;
+    color: var(--text);
+}
+p:last-child { margin-bottom: 0; }
+
+/* equations */
+.equation-block {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+    margin: 24px 0;
+}
+.equation-block .mjx-math {
+    font-size: 1.15rem;
+}
+.equation-block p {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    margin-top: 14px;
+    margin-bottom: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+/* parameter table */
+.param-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+}
+.param-table th {
+    text-align: left;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    padding: 10px 16px;
+    border-bottom: 2px solid var(--border);
+}
+.param-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+.param-table .symbol {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--accent);
+    width: 60px;
+}
+.param-table .value {
+    font-family: var(--font-mono);
+    color: #eee;
+    width: 60px;
+}
+
+/* applications */
+.app-list {
+    list-style: none;
+    margin: 20px 0 0;
+}
+.app-list li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+.app-list li:last-child { border-bottom: none; }
+.app-list .app-title {
+    font-weight: 700;
+    color: #eee;
+}
+
+/* footnote */
+.note {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 12px;
+}
+
+/* footer */
+footer {
+    padding: 40px 0;
+    text-align: center;
+}
+footer a {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+}
+footer a:hover { border-bottom-color: var(--accent); }
+
+@media (max-width: 600px) {
+    header { padding: 52px 0 36px; }
+    header h1 { font-size: 1.8rem; }
+    .section { padding: 36px 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+<!-- header -->
+<header>
+    <h1>The Lorenz Attractor</h1>
+    <p class="tagline">A brief introduction to deterministic chaos</p>
+</header>
+
+<!-- 1. background -->
+<div class="section">
+    <div class="section-label">Background</div>
+    <h2>How a rounding error changed science</h2>
+    <p>
+        In 1963, an MIT meteorologist named Edward Lorenz was running a computer simulation
+        of atmospheric convection. He wanted to re-examine a particular run, so he restarted
+        the simulation from the middle. But instead of typing the full value
+        <strong>0.506127</strong>, he rounded it to <strong>0.506</strong>.
+    </p>
+    <p>
+        That difference was less than 0.02%. It should not have mattered. But over time,
+        the two simulations diverged completely. They started out nearly identical and ended
+        up producing totally different weather patterns.
+    </p>
+    <p>
+        Lorenz had stumbled onto something fundamental: in certain systems, tiny differences
+        in initial conditions get amplified over time until the outcomes are unrecognizable.
+        This idea eventually became known as the "butterfly effect," and the mathematical
+        structure behind it is called the <strong>Lorenz attractor</strong>.
+    </p>
+    <p>
+        What makes this so strange is that there is no randomness involved. The equations
+        are entirely deterministic. If you plug in the exact same numbers, you get the exact
+        same result every time. The problem is that you can never measure the real world
+        with perfect precision. And in a chaotic system, "close enough" is never close enough.
+    </p>
+</div>
+
+<!-- 2. the equations -->
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Three coupled differential equations</h2>
+    <p>
+        The Lorenz system is built on three variables (x, y, and z) that represent
+        a simplified model of atmospheric convection. Each equation describes how one
+        variable changes over time, depending on the current values of all three.
+    </p>
+
+    <div class="equation-block">
+        \[\frac{dx}{dt} = \sigma\,(y - x)\]
+        <p>
+            The rate of change of x is proportional to the difference between y and x.
+            When y is larger, x grows. When y is smaller, x shrinks. The parameter
+            sigma controls how quickly x responds.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[\frac{dy}{dt} = x\,(\rho - z) - y\]
+        <p>
+            This equation has a nonlinear term: x multiplied by (rho minus z). When z
+            is small, this term drives y upward. When z is large, it suppresses y. The
+            minus y at the end acts as a damping force that pulls y back toward zero.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[\frac{dz}{dt} = x\,y - \beta\,z\]
+        <p>
+            The product of x and y pushes z upward, while beta times z pulls it back down.
+            This competition between the two terms is what produces the attractor's
+            characteristic double-lobed shape.
+        </p>
+    </div>
+
+    <p class="note">
+        The nonlinear terms (x times z in the second equation, x times y in the third)
+        are what make this system chaotic. Without them, the behavior would be straightforward.
+    </p>
+</div>
+
+<!-- 3. parameters -->
+<div class="section">
+    <div class="section-label">Parameters</div>
+    <h2>The standard values</h2>
+    <p>
+        Lorenz chose these values to model convection rolls in the atmosphere.
+        They have since become the standard test case for studying chaotic dynamics.
+        The attractor only appears for certain ranges of these parameters, and
+        the classic values sit right in the heart of the chaotic regime.
+    </p>
+
+    <table class="param-table">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Value</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="symbol">&sigma;</td>
+                <td class="value">10</td>
+                <td>Prandtl number. Ratio of the fluid's viscosity to its thermal conductivity.</td>
+            </tr>
+            <tr>
+                <td class="symbol">&rho;</td>
+                <td class="value">28</td>
+                <td>Rayleigh number. Proportional to the temperature difference between the top and bottom of the fluid layer.</td>
+            </tr>
+            <tr>
+                <td class="symbol">&beta;</td>
+                <td class="value">8/3</td>
+                <td>Geometric factor. Related to the aspect ratio of the convection cell.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 4. applications -->
+<div class="section">
+    <div class="section-label">Applications</div>
+    <h2>Where this shows up in practice</h2>
+    <p>
+        Chaos theory started with weather, but the same math turns up across a wide
+        range of fields. Anywhere you find nonlinear feedback loops, you're likely
+        to find chaotic behavior.
+    </p>
+
+    <ul class="app-list">
+        <li>
+            <span class="app-title">Weather and climate modeling.</span>
+            This is where Lorenz's work began. Chaotic sensitivity is the reason
+            weather forecasts lose accuracy after about 10 days, no matter how much
+            data you collect.
+        </li>
+        <li>
+            <span class="app-title">Fluid dynamics.</span>
+            Turbulent flow in pipes, around aircraft, and through the ocean follows
+            chaotic patterns. Understanding those patterns is a major part of modern
+            engineering.
+        </li>
+        <li>
+            <span class="app-title">Cardiology.</span>
+            A healthy heart rhythm actually has a small amount of chaotic variability.
+            When that variability disappears, it can be a warning sign of cardiac disease.
+        </li>
+        <li>
+            <span class="app-title">Cryptography.</span>
+            Chaotic systems produce outputs that look random but are fully deterministic.
+            That property makes them useful for generating encryption keys and secure
+            pseudo-random sequences.
+        </li>
+    </ul>
+</div>
+
+<!-- footer -->
+<footer>
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
+</footer>
+
+</div>
+
+</body>
+</html>
