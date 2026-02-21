@@ -2,11 +2,12 @@
 
 
 ## What does this repo entail?
+-> in pyfiles
 ### hello.py
 - initial commit to start the repo up, prints "hello, world!"
-### refreshers -> addTypes.py
+### addTypes.py
 - trying to add variables together and finding solutions for ValueErrors
-### refreshers -> lorenz.py
+###  lorenz.py
 - displaying a lorenz attractor in 3d using python libraries and some math
 - added a more interactive view so you zoom in and out
 - added color gradiens by its position in time
