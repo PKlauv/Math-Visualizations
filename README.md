@@ -6,6 +6,8 @@
 - initial commit to start the repo up, prints "hello, world!"
 ### refreshers -> addTypes.py
 - trying to add variables together and finding solutions for ValueErrors
+### refreshers -> lorenz.py
+- displaying a lorenz attractor in 3d using python libraries and some math
 
 ## Why?
 I will be preparing for the course by doing some objectives to test my ability.
