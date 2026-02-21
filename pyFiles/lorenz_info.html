@@ -4,8 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>The Lorenz Attractor</title>
+<!-- MathJax 3 — renders LaTeX equations (\[ ... \]) into formatted math -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 <style>
+/* Custom properties — dark theme palette and font stack choices.
+   Serif body font gives a textbook feel; UI sans-serif for labels;
+   monospace for parameter values. */
 :root {
     --bg: #101010;
     --bg-surface: #181818;
@@ -18,9 +22,11 @@
     --font-mono: 'Cascadia Code', 'Consolas', monospace;
 }
 
+/* Global reset — consistent box model and smooth anchor scrolling */
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
+/* Base body styles */
 body {
     background: var(--bg);
     color: var(--text);
@@ -29,14 +35,14 @@ body {
     line-height: 1.8;
 }
 
-/* layout */
+/* Centered content column, max 760px for comfortable reading width */
 .container {
     max-width: 760px;
     margin: 0 auto;
     padding: 0 28px;
 }
 
-/* header */
+/* Page header — generous vertical padding, bottom border separator */
 header {
     padding: 80px 0 48px;
     border-bottom: 1px solid var(--border);
@@ -56,7 +62,7 @@ header .tagline {
     font-style: italic;
 }
 
-/* sections */
+/* Content sections — separated by subtle bottom borders */
 .section {
     padding: 52px 0;
     border-bottom: 1px solid var(--border);
@@ -64,6 +70,7 @@ header .tagline {
 .section:last-of-type {
     border-bottom: none;
 }
+/* Uppercase label above each section heading */
 .section-label {
     font-family: var(--font-ui);
     font-size: 0.75rem;
@@ -85,7 +92,7 @@ p {
 }
 p:last-child { margin-bottom: 0; }
 
-/* equations */
+/* Equation display blocks — dark surface with accent left border */
 .equation-block {
     background: var(--bg-surface);
     border: 1px solid var(--border);
@@ -96,6 +103,7 @@ p:last-child { margin-bottom: 0; }
 .equation-block .mjx-math {
     font-size: 1.15rem;
 }
+/* Explanation text below each equation */
 .equation-block p {
     font-size: 0.95rem;
     color: var(--text-dim);
@@ -105,7 +113,7 @@ p:last-child { margin-bottom: 0; }
     border-top: 1px solid var(--border);
 }
 
-/* parameter table */
+/* Parameter table — shows sigma, rho, beta with values and descriptions */
 .param-table {
     width: 100%;
     border-collapse: collapse;
@@ -141,7 +149,7 @@ p:last-child { margin-bottom: 0; }
     width: 60px;
 }
 
-/* applications */
+/* Real-world applications list — borderless list items with bold titles */
 .app-list {
     list-style: none;
     margin: 20px 0 0;
@@ -156,7 +164,7 @@ p:last-child { margin-bottom: 0; }
     color: #eee;
 }
 
-/* footnote */
+/* Footnote — small italic text for supplementary notes */
 .note {
     font-size: 0.88rem;
     color: var(--text-dim);
@@ -164,7 +172,7 @@ p:last-child { margin-bottom: 0; }
     margin-top: 12px;
 }
 
-/* footer */
+/* Footer — centered "Back to top" link with hover underline */
 footer {
     padding: 40px 0;
     text-align: center;
@@ -179,6 +187,7 @@ footer a {
 }
 footer a:hover { border-bottom-color: var(--accent); }
 
+/* Responsive — tighter spacing on narrow screens */
 @media (max-width: 600px) {
     header { padding: 52px 0 36px; }
     header h1 { font-size: 1.8rem; }
@@ -190,13 +199,13 @@ footer a:hover { border-bottom-color: var(--accent); }
 
 <div class="container">
 
-<!-- header -->
+<!-- Header — page title and tagline -->
 <header>
     <h1>The Lorenz Attractor</h1>
     <p class="tagline">A brief introduction to deterministic chaos</p>
 </header>
 
-<!-- 1. background -->
+<!-- Section 1: Background — the historical story of Lorenz's discovery -->
 <div class="section">
     <div class="section-label">Background</div>
     <h2>How a rounding error changed science</h2>
@@ -225,7 +234,7 @@ footer a:hover { border-bottom-color: var(--accent); }
     </p>
 </div>
 
-<!-- 2. the equations -->
+<!-- Section 2: Equations — the three coupled ODEs with plain-language explanations -->
 <div class="section">
     <div class="section-label">The Equations</div>
     <h2>Three coupled differential equations</h2>
@@ -235,6 +244,7 @@ footer a:hover { border-bottom-color: var(--accent); }
         variable changes over time, depending on the current values of all three.
     </p>
 
+    <!-- Equation 1: dx/dt -->
     <div class="equation-block">
         \[\frac{dx}{dt} = \sigma\,(y - x)\]
         <p>
@@ -244,6 +254,7 @@ footer a:hover { border-bottom-color: var(--accent); }
         </p>
     </div>
 
+    <!-- Equation 2: dy/dt -->
     <div class="equation-block">
         \[\frac{dy}{dt} = x\,(\rho - z) - y\]
         <p>
@@ -253,6 +264,7 @@ footer a:hover { border-bottom-color: var(--accent); }
         </p>
     </div>
 
+    <!-- Equation 3: dz/dt -->
     <div class="equation-block">
         \[\frac{dz}{dt} = x\,y - \beta\,z\]
         <p>
@@ -268,7 +280,7 @@ footer a:hover { border-bottom-color: var(--accent); }
     </p>
 </div>
 
-<!-- 3. parameters -->
+<!-- Section 3: Parameters — sigma, rho, beta table with physical meanings -->
 <div class="section">
     <div class="section-label">Parameters</div>
     <h2>The standard values</h2>
@@ -307,7 +319,7 @@ footer a:hover { border-bottom-color: var(--accent); }
     </table>
 </div>
 
-<!-- 4. applications -->
+<!-- Section 4: Applications — real-world fields where chaos theory appears -->
 <div class="section">
     <div class="section-label">Applications</div>
     <h2>Where this shows up in practice</h2>
@@ -344,7 +356,7 @@ footer a:hover { border-bottom-color: var(--accent); }
     </ul>
 </div>
 
-<!-- footer -->
+<!-- Footer — smooth-scroll "Back to top" link -->
 <footer>
     <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
 </footer>
