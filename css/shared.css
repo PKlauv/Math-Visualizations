@@ -1,0 +1,235 @@
+/* ===================================================================
+   Shared styles — dark theme palette, typography, layout primitives.
+   Every visualization page links to this file.
+   =================================================================== */
+
+/* Custom properties — dark theme palette and font stack choices.
+   Serif body font gives a textbook feel; UI sans-serif for labels;
+   monospace for parameter values. */
+:root {
+    --bg: #101010;
+    --bg-surface: #181818;
+    --border: #282828;
+    --text: #d4d4d4;
+    --text-dim: #888;
+    --accent: #c8a26a;
+    --font-body: 'Cambria', 'Georgia', 'Times New Roman', serif;
+    --font-ui: 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'Cascadia Code', 'Consolas', monospace;
+}
+
+/* Global reset — consistent box model and smooth anchor scrolling */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+/* Base body styles */
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    line-height: 1.8;
+}
+
+/* Site navigation bar */
+.site-nav {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+}
+.nav-home {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--accent);
+    text-decoration: none;
+    white-space: nowrap;
+}
+.nav-links {
+    display: flex;
+    gap: 20px;
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
+}
+.nav-links a {
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.nav-links a:hover,
+.nav-links a.active {
+    color: var(--accent);
+}
+
+/* Centered content column, max 760px for comfortable reading width */
+.container {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 28px;
+}
+
+/* Page header — generous vertical padding, bottom border separator */
+header {
+    padding: 32px 0 28px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+header h1 {
+    font-family: var(--font-body);
+    font-size: 2.4rem;
+    font-weight: 400;
+    letter-spacing: 0.5px;
+    color: #eee;
+    margin-bottom: 8px;
+}
+header .tagline {
+    font-size: 1rem;
+    color: var(--text-dim);
+    font-style: italic;
+}
+
+/* Content sections — separated by subtle bottom borders */
+.section {
+    padding: 52px 0;
+    border-bottom: 1px solid var(--border);
+}
+.section:last-of-type {
+    border-bottom: none;
+}
+/* Uppercase label above each section heading */
+.section-label {
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 12px;
+}
+h2 {
+    font-family: var(--font-body);
+    font-size: 1.6rem;
+    font-weight: 400;
+    color: #eee;
+    margin-bottom: 20px;
+}
+p {
+    margin-bottom: 16px;
+    color: var(--text);
+}
+p:last-child { margin-bottom: 0; }
+
+/* Equation display blocks — dark surface with accent left border */
+.equation-block {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 24px 28px;
+    margin: 24px 0;
+}
+.equation-block .mjx-math {
+    font-size: 1.15rem;
+}
+/* Explanation text below each equation */
+.equation-block p {
+    font-size: 0.95rem;
+    color: var(--text-dim);
+    margin-top: 14px;
+    margin-bottom: 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+/* Parameter table — shows values and descriptions */
+.param-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 0.95rem;
+}
+.param-table th {
+    text-align: left;
+    font-family: var(--font-ui);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    padding: 10px 16px;
+    border-bottom: 2px solid var(--border);
+}
+.param-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+}
+.param-table .symbol {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: 1.1rem;
+    color: var(--accent);
+    width: 60px;
+}
+.param-table .value {
+    font-family: var(--font-mono);
+    color: #eee;
+    width: 60px;
+}
+
+/* Application / item lists — borderless list items with bold titles */
+.app-list {
+    list-style: none;
+    margin: 20px 0 0;
+}
+.app-list li {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+.app-list li:last-child { border-bottom: none; }
+.app-list .app-title {
+    font-weight: 700;
+    color: #eee;
+}
+
+/* Footnote — small italic text for supplementary notes */
+.note {
+    font-size: 0.88rem;
+    color: var(--text-dim);
+    font-style: italic;
+    margin-top: 12px;
+}
+
+/* Footer — centered links with hover underline */
+footer {
+    padding: 40px 0;
+    text-align: center;
+}
+footer a {
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    color: var(--accent);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+}
+footer a:hover { border-bottom-color: var(--accent); }
+
+/* Responsive — tighter spacing on narrow screens */
+@media (max-width: 600px) {
+    header { padding: 52px 0 36px; }
+    header h1 { font-size: 1.8rem; }
+    .section { padding: 36px 0; }
+
+    .site-nav {
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px 20px;
+    }
+    .nav-links {
+        gap: 14px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}

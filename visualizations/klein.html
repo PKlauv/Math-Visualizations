@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive 3D visualization of the Klein bottle - a closed non-orientable surface with no inside or outside, rendered as a classic bottle immersion.">
+<meta name="theme-color" content="#101010">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Klein Bottle - Interactive 3D Topology Visualization">
+<meta property="og:description" content="Explore the Klein bottle: a closed surface with no inside or outside, visualized as an interactive 3D immersion with parametric equations.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍶</text></svg>">
+<title>Klein Bottle - Math Visualizations</title>
+<!-- Plotly.js — interactive 3D plotting -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<!-- MathJax 3 — renders LaTeX equations (\[ ... \]) into formatted math -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+/* 3D plot wrapper — sits outside .container for full width */
+#plot-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+#plot {
+    width: 100%;
+    height: 560px;
+}
+/* Status HUD overlay — bottom-left of plot */
+#hud {
+    position: absolute;
+    bottom: 52px;
+    left: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 10px 16px 10px 14px;
+    min-width: 150px;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#hud-phase {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    transition: color 0.3s;
+}
+#hud-phase.paused {
+    color: #d4915e;
+}
+#hud-detail {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+/* Animation control buttons — bottom-right of plot */
+#controls {
+    position: absolute;
+    bottom: 52px;
+    right: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+}
+#controls button {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+#controls button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #eee;
+}
+
+/* Educational caption overlay at bottom of plot area */
+#caption {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0 16px;
+    min-height: 40px;
+    transition: opacity 0.6s;
+}
+
+/* Slider controls — identical to Mobius page */
+#sliders {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding: 12px 16px;
+}
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+.slider-group label {
+    min-width: 100px;
+    white-space: nowrap;
+}
+.slider-group label span {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+.slider-group input[type="range"] {
+    width: 120px;
+    accent-color: var(--accent);
+}
+
+/* Responsive — tighter spacing on narrow screens */
+@media (max-width: 600px) {
+    #plot { height: 360px; }
+    #sliders {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+    }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+    <a href="../index.html" class="nav-home">Math Visualizations</a>
+    <div class="nav-links">
+        <a href="lorenz.html">Lorenz</a>
+        <a href="mobius.html">Mobius</a>
+        <a href="klein.html" class="active">Klein</a>
+        <a href="sierpinski.html">Sierpinski</a>
+        <a href="mandelbrot.html">Mandelbrot</a>
+    </div>
+</nav>
+
+<div class="container">
+
+<!-- Header — page title and tagline -->
+<header>
+    <h1>The Klein Bottle</h1>
+    <p class="tagline">A closed surface with no inside and no outside. It can only truly exist in four dimensions</p>
+</header>
+
+</div><!-- end .container for header -->
+
+<!-- Interactive 3D Klein bottle — loads fully rendered with slow auto-rotate -->
+<div id="plot-wrapper">
+    <div id="plot"></div>
+    <div id="hud">
+        <div id="hud-phase"></div>
+        <div id="hud-detail"></div>
+    </div>
+    <div id="controls">
+        <button id="btn-pause" title="Pause / Play">⏸</button>
+        <button id="btn-reset" title="Reset camera">↺</button>
+    </div>
+    <div id="caption"></div>
+    <div id="sliders">
+        <div class="slider-group">
+            <label>Opacity <span id="opacity-val">1.00</span></label>
+            <input type="range" id="opacity-slider" min="0.3" max="1.0" step="0.05" value="1.00">
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+<!-- Section 1: Topology — non-orientability explained -->
+<div class="section">
+    <div class="section-label">Topology</div>
+    <h2>A surface with no inside</h2>
+    <p>
+        The Klein bottle is a closed surface, like a sphere, it has no edges. But unlike
+        a sphere, it has no inside or outside. If you tried to paint the "outside" of a
+        Klein bottle, you'd end up painting the "inside" too, because they're the same
+        surface.
+    </p>
+    <p>
+        In three dimensions, the surface has to pass through itself to close up. This
+        self-intersection is an artifact of being stuck in 3D. In four dimensions, the
+        Klein bottle closes up cleanly without any intersection, the same way a
+        figure-eight on paper seems to cross itself but a circle in 3D doesn't.
+    </p>
+</div>
+
+<!-- Section 2: Equations — the piecewise parametric equations for the classic bottle -->
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Classic bottle immersion</h2>
+    <p>
+        The classic Klein bottle is defined by a set of equations that work differently
+        for each half. The parameter u sweeps from 0 to 2&pi; while v sweeps from 0 to
+        2&pi;. The tube radius r = 4(1 &minus; cos(u)/2) varies so the neck narrows as it
+        curves back through the body.
+    </p>
+
+    <!-- Equation: body half (u < pi) -->
+    <div class="equation-block">
+        \[ \text{For } u < \pi: \quad x = 6\cos u\,(1+\sin u) + r\cos u\cos v, \quad y = 16\sin u + r\sin u\cos v \]
+        <p>
+            When u is in the first half, the tube shape attaches to the body surface,
+            creating the bulging bottle shape. The 6cos(u)(1 + sin(u)) term traces the overall
+            profile while the r&middot;cos(v) terms add the circular tube cross-section.
+        </p>
+    </div>
+
+    <!-- Equation: neck half (u >= pi) -->
+    <div class="equation-block">
+        \[ \text{For } u \geq \pi: \quad x = 6\cos u\,(1+\sin u) - r\cos v, \quad y = 16\sin u \]
+        <p>
+            In the second half, the tube detaches from the body axis and passes through the
+            surface. The x-equation subtracts r&middot;cos(v) independently of sin(u), forming
+            the characteristic neck that dips back inside the bottle.
+        </p>
+    </div>
+
+    <!-- Equation: z for both halves -->
+    <div class="equation-block">
+        \[ z(u,v) = r\sin v, \quad r = 4\!\left(1 - \tfrac{\cos u}{2}\right) \]
+        <p>
+            The z-coordinate is the same for both halves. It simply lifts the tube
+            shape out of the xy-plane. The varying radius r is what gives the bottle
+            its recognizable shape: wide at the base, narrow at the neck.
+        </p>
+    </div>
+
+    <p class="note">
+        The self-intersection where the neck passes through the body is unavoidable in 3D.
+        In four dimensions, the Klein bottle closes seamlessly without any crossing.
+    </p>
+</div>
+
+<!-- Section 3: Connections — relationship to Mobius strips -->
+<div class="section">
+    <div class="section-label">Connections</div>
+    <h2>Two Mobius strips</h2>
+    <p>
+        If you cut a Klein bottle in half along a certain curve, you get two Mobius strips.
+        This connection goes both ways: gluing two Mobius strips edge-to-edge produces a
+        Klein bottle. The one-sidedness of the Mobius strip is inherited by the Klein
+        bottle. Both surfaces have only one side.
+    </p>
+    <p>
+        Mathematicians use a number called the Euler characteristic to tell surfaces apart.
+        The Klein bottle scores 0, making it fundamentally different from the sphere (which
+        scores 2). The torus also scores 0, but the torus is orientable and has a well-defined
+        inside and outside. The Klein bottle is the simplest closed surface that is both
+        one-sided and has no boundary.
+    </p>
+</div>
+
+<!-- Footer -->
+<footer>
+    <a href="../index.html">Back to portfolio</a>
+    &nbsp;&middot;&nbsp;
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
+</footer>
+
+</div>
+
+<script>
+// ==========================================================================
+// Klein Bottle — interactive 3D figure-8 immersion with auto-rotate
+// ==========================================================================
+
+(function () {
+    'use strict';
+
+    // --- Parameters ---
+    var RES = 40;                        // grid resolution (40x40)
+    var DEFAULT_OPACITY = 1.0;
+    var ORBIT_SPEED = 0.003;             // radians per frame
+    var RESUME_DELAY = 5000;             // ms before auto-resume
+
+    // --- DOM references ---
+    var plotDiv      = document.getElementById('plot');
+    var hudPhase     = document.getElementById('hud-phase');
+    var hudDetail    = document.getElementById('hud-detail');
+    var btnPause     = document.getElementById('btn-pause');
+    var btnReset     = document.getElementById('btn-reset');
+    var opacitySlider = document.getElementById('opacity-slider');
+    var opacityVal   = document.getElementById('opacity-val');
+
+    // --- State ---
+    var rotating    = true;              // auto-rotate active
+    var manualPause = false;             // paused via button
+    var orbitAngle  = 0;
+    var resumeTimer = null;
+    var animFrame   = null;
+    var currentOpacity = DEFAULT_OPACITY;
+    var hudFrameCount = 0;
+    var HUD_UPDATE_INTERVAL = 6;  // update HUD every 6 frames (~10Hz)
+    var glSceneRef = null;
+
+    // Default camera position
+    var DEFAULT_EYE = { x: 1.6, y: 1.6, z: 0.8 };
+    var ORBIT_RADIUS = Math.sqrt(DEFAULT_EYE.x * DEFAULT_EYE.x + DEFAULT_EYE.y * DEFAULT_EYE.y);
+
+    // --- Colorscale ---
+    var kleinColorscale = [
+        [0,   'rgb(10,5,40)'],
+        [0.3, 'rgb(80,20,100)'],
+        [0.6, 'rgb(160,80,60)'],
+        [1,   'rgb(200,162,106)']
+    ];
+
+    // --- Compute classic Klein bottle surface (tube-through-body) ---
+    function computeSurface() {
+        var xData = [];
+        var yData = [];
+        var zData = [];
+        var PI = Math.PI;
+
+        for (var i = 0; i <= RES; i++) {
+            var u = (i / RES) * 2 * PI;
+            var xRow = [];
+            var yRow = [];
+            var zRow = [];
+
+            var cosU = Math.cos(u);
+            var sinU = Math.sin(u);
+            for (var j = 0; j <= RES; j++) {
+                var v = (j / RES) * 2 * PI;
+                var cosV = Math.cos(v);
+                var sinV = Math.sin(v);
+                var r = 4 * (1 - cosU / 2);
+
+                var x, y, z;
+                if (u < PI) {
+                    x = 6 * cosU * (1 + sinU) + r * cosU * cosV;
+                    y = 16 * sinU + r * sinU * cosV;
+                } else {
+                    x = 6 * cosU * (1 + sinU) - r * cosV;
+                    y = 16 * sinU;
+                }
+                z = r * sinV;
+
+                xRow.push(x);
+                yRow.push(y);
+                zRow.push(z);
+            }
+
+            xData.push(xRow);
+            yData.push(yRow);
+            zData.push(zRow);
+        }
+
+        return { x: xData, y: yData, z: zData };
+    }
+
+    // --- Build initial surface data ---
+    var surface = computeSurface();
+
+    var trace = {
+        type: 'surface',
+        x: surface.x,
+        y: surface.y,
+        z: surface.z,
+        colorscale: kleinColorscale,
+        showscale: false,
+        opacity: DEFAULT_OPACITY,
+        hoverinfo: 'skip',
+        lighting: { ambient: 0.6, diffuse: 0.6, specular: 0.2, roughness: 0.5 },
+        lightposition: { x: 100, y: 200, z: 300 }
+    };
+
+    // Dark axis style — no labels, no ticks
+    var axStyle = {
+        title: '',
+        showticklabels: false,
+        showgrid: true,
+        gridcolor: '#1a1a1a',
+        zerolinecolor: '#222',
+        backgroundcolor: '#101010',
+        showspikes: false
+    };
+
+    var layout = {
+        paper_bgcolor: '#101010',
+        plot_bgcolor: '#101010',
+        scene: {
+            bgcolor: '#101010',
+            xaxis: axStyle,
+            yaxis: axStyle,
+            zaxis: axStyle,
+            camera: { eye: { x: DEFAULT_EYE.x, y: DEFAULT_EYE.y, z: DEFAULT_EYE.z } },
+            dragmode: 'orbit'
+        },
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        showlegend: false
+    };
+
+    var config = {
+        responsive: true,
+        displayModeBar: false,
+        scrollZoom: false
+    };
+
+    // --- Create Plotly plot ---
+    Plotly.newPlot(plotDiv, [trace], layout, config);
+
+    // --- HUD update ---
+    function updateHUD() {
+        if (rotating) {
+            hudPhase.textContent = 'ROTATING';
+            hudPhase.classList.remove('paused');
+            var degrees = Math.round((orbitAngle % (2 * Math.PI)) / (2 * Math.PI) * 360);
+            hudDetail.textContent = degrees + '\u00B0';
+        } else {
+            hudPhase.textContent = 'PAUSED';
+            hudPhase.classList.add('paused');
+            if (manualPause) {
+                hudDetail.textContent = 'Paused';
+            } else {
+                hudDetail.textContent = 'Drag to explore';
+            }
+        }
+    }
+
+    // --- Camera orbit helper ---
+    function orbitCameraEye(angle) {
+        return {
+            x: ORBIT_RADIUS * Math.cos(angle),
+            y: ORBIT_RADIUS * Math.sin(angle),
+            z: DEFAULT_EYE.z
+        };
+    }
+
+    // --- Animation loop ---
+    function tick() {
+        hudFrameCount++;
+        if (hudFrameCount >= HUD_UPDATE_INTERVAL) {
+            hudFrameCount = 0;
+            updateHUD();
+        }
+
+        if (rotating) {
+            orbitAngle += ORBIT_SPEED;
+            var eye = orbitCameraEye(orbitAngle);
+            if (!glSceneRef) {
+                var s = plotDiv._fullLayout && plotDiv._fullLayout.scene &&
+                        plotDiv._fullLayout.scene._scene;
+                if (s && s.setCamera) glSceneRef = s;
+            }
+            if (glSceneRef) {
+                glSceneRef.setCamera({
+                    eye: eye,
+                    center: { x: 0, y: 0, z: 0 },
+                    up: { x: 0, y: 0, z: 1 }
+                });
+            } else {
+                Plotly.relayout(plotDiv, { 'scene.camera.eye': eye });
+            }
+        }
+
+        animFrame = requestAnimationFrame(tick);
+    }
+
+    // --- Interaction pause / resume ---
+    function interactionPause() {
+        if (manualPause) return;
+        rotating = false;
+        btnPause.textContent = '\u25B6';
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(function () {
+            if (!manualPause) {
+                rotating = true;
+                btnPause.textContent = '\u23F8';
+            }
+        }, RESUME_DELAY);
+    }
+
+    plotDiv.addEventListener('mousedown', interactionPause);
+    plotDiv.addEventListener('touchstart', interactionPause);
+
+    // --- Control button handlers ---
+    btnPause.addEventListener('click', function () {
+        if (rotating) {
+            // Manual pause
+            rotating = false;
+            manualPause = true;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u25B6';
+        } else {
+            // Resume
+            rotating = true;
+            manualPause = false;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u23F8';
+        }
+        updateHUD();
+    });
+
+    btnReset.addEventListener('click', function () {
+        // Reset camera to default, resume rotation
+        orbitAngle = Math.atan2(DEFAULT_EYE.y, DEFAULT_EYE.x);
+        rotating = true;
+        manualPause = false;
+        clearTimeout(resumeTimer);
+        btnPause.textContent = '\u23F8';
+
+        Plotly.relayout(plotDiv, {
+            'scene.camera.eye': { x: DEFAULT_EYE.x, y: DEFAULT_EYE.y, z: DEFAULT_EYE.z }
+        });
+        updateHUD();
+    });
+
+    // --- Slider handlers ---
+
+    // Opacity slider
+    opacitySlider.addEventListener('input', function () {
+        currentOpacity = parseFloat(this.value);
+        opacityVal.textContent = currentOpacity.toFixed(2);
+        Plotly.restyle(plotDiv, { opacity: currentOpacity }, 0);
+    });
+
+    // --- Initialize orbit angle from default camera ---
+    orbitAngle = Math.atan2(DEFAULT_EYE.y, DEFAULT_EYE.x);
+
+    // --- Start animation ---
+    requestAnimationFrame(tick);
+
+})();
+</script>
+
+</body>
+</html>

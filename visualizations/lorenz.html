@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive 3D visualization of the Lorenz attractor with real-time animation, differential equations, and the story behind chaos theory's most famous shape.">
+<meta name="theme-color" content="#101010">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Lorenz Attractor - Interactive 3D Chaos Theory Visualization">
+<meta property="og:description" content="Explore the butterfly of chaos theory: animated 3D trajectory, Lorenz equations with plain-language explanations, and real-world applications.">
+<meta property="og:url" content="https://pklauv.github.io/lorenz-attractor/lorenz.html">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦋</text></svg>">
+<title>Lorenz Attractor - Math Visualizations</title>
+<!-- Plotly.js — interactive 3D plotting and animation -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<!-- MathJax 3 — renders LaTeX equations (\[ ... \]) into formatted math -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+/* 3D plot wrapper — sits outside .container for full width */
+#plot-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+#plot {
+    width: 100%;
+    height: 560px;
+}
+/* Status HUD overlay — bottom-left of plot */
+#hud {
+    position: absolute;
+    bottom: 52px;
+    left: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 10px 16px 10px 14px;
+    min-width: 150px;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#hud-phase {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    transition: color 0.3s;
+}
+#hud-phase.paused {
+    color: #d4915e;
+}
+#hud-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+#hud-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.15s linear;
+}
+#hud-detail {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+/* Animation control buttons — bottom-right of plot */
+#controls {
+    position: absolute;
+    bottom: 52px;
+    right: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+}
+#controls button {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+#controls button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #eee;
+}
+
+/* Educational caption overlay at bottom of plot area */
+#caption {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0 16px;
+    min-height: 40px;
+    transition: opacity 0.6s;
+}
+
+/* Responsive — tighter spacing on narrow screens */
+@media (max-width: 600px) {
+    #plot { height: 360px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+    <a href="../index.html" class="nav-home">Math Visualizations</a>
+    <div class="nav-links">
+        <a href="lorenz.html" class="active">Lorenz</a>
+        <a href="mobius.html">Mobius</a>
+        <a href="klein.html">Klein</a>
+        <a href="sierpinski.html">Sierpinski</a>
+        <a href="mandelbrot.html">Mandelbrot</a>
+    </div>
+</nav>
+
+<div class="container">
+
+<!-- Header — page title and tagline -->
+<header>
+    <h1>The Lorenz Attractor</h1>
+    <p class="tagline">A 3D shape born from weather equations, where tiny differences lead to wildly different outcomes</p>
+</header>
+
+</div><!-- end .container for header -->
+
+<!-- Animated 3D Lorenz attractor — draws progressively, then orbits in a loop -->
+<div id="plot-wrapper">
+    <div id="plot"></div>
+    <div id="hud">
+        <div id="hud-phase"></div>
+        <div id="hud-progress"><div id="hud-progress-fill"></div></div>
+        <div id="hud-detail"></div>
+    </div>
+    <div id="controls">
+        <button id="btn-pause" title="Pause / Play">⏸</button>
+        <button id="btn-skip" title="Skip phase">⏭</button>
+        <button id="btn-reset" title="Reset">↺</button>
+    </div>
+    <div id="caption"></div>
+</div>
+
+<div class="container">
+
+<!-- Section 1: Background — the historical story of Lorenz's discovery -->
+<div class="section">
+    <div class="section-label">Background</div>
+    <h2>How a rounding error changed science</h2>
+    <p>
+        In 1963, an MIT meteorologist named Edward Lorenz was running a computer simulation
+        of atmospheric convection. He wanted to re-examine a particular run, so he restarted
+        the simulation from the middle. But instead of typing the full value
+        <strong>0.506127</strong>, he rounded it to <strong>0.506</strong>.
+    </p>
+    <p>
+        That difference was less than 0.02%. It should not have mattered. But over time,
+        the two simulations diverged completely. They started out nearly identical and ended
+        up producing totally different weather patterns.
+    </p>
+    <p>
+        Lorenz had stumbled onto something fundamental: in certain systems, tiny differences
+        in initial conditions get amplified over time until the outcomes are unrecognizable.
+        This idea eventually became known as the "butterfly effect," and the mathematical
+        structure behind it is called the <strong>Lorenz attractor</strong>.
+    </p>
+    <p>
+        What makes this so strange is that there is no randomness involved. The equations
+        are entirely deterministic. If you plug in the exact same numbers, you get the exact
+        same result every time. The problem is that you can never measure the real world
+        with perfect precision. And in a chaotic system, "close enough" is never close enough.
+    </p>
+</div>
+
+<!-- Section 2: Equations — the three coupled ODEs with plain-language explanations -->
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Three coupled differential equations</h2>
+    <p>
+        The Lorenz system is built on three variables (x, y, and z) that represent
+        a simplified model of atmospheric convection. Each equation describes how one
+        variable changes over time, depending on the current values of all three.
+    </p>
+
+    <!-- Equation 1: dx/dt -->
+    <div class="equation-block">
+        \[\frac{dx}{dt} = \sigma\,(y - x)\]
+        <p>
+            The rate of change of x is proportional to the difference between y and x.
+            When y is larger, x grows. When y is smaller, x shrinks. The parameter
+            sigma controls how quickly x responds.
+        </p>
+    </div>
+
+    <!-- Equation 2: dy/dt -->
+    <div class="equation-block">
+        \[\frac{dy}{dt} = x\,(\rho - z) - y\]
+        <p>
+            This equation has a nonlinear term: x multiplied by (rho minus z). When z
+            is small, this term drives y upward. When z is large, it suppresses y. The
+            minus y at the end acts as a damping force that pulls y back toward zero.
+        </p>
+    </div>
+
+    <!-- Equation 3: dz/dt -->
+    <div class="equation-block">
+        \[\frac{dz}{dt} = x\,y - \beta\,z\]
+        <p>
+            The product of x and y pushes z upward, while beta times z pulls it back down.
+            This competition between the two terms is what produces the attractor's
+            characteristic double-lobed shape.
+        </p>
+    </div>
+
+    <p class="note">
+        The nonlinear terms (x times z in the second equation, x times y in the third)
+        are what make this system chaotic. Without them, the behavior would be straightforward.
+    </p>
+</div>
+
+<!-- Section 3: Parameters — sigma, rho, beta table with physical meanings -->
+<div class="section">
+    <div class="section-label">Parameters</div>
+    <h2>The standard values</h2>
+    <p>
+        Lorenz chose these values to model convection rolls in the atmosphere.
+        They have since become the standard test case for studying chaotic behavior.
+        The attractor only appears for certain ranges of these parameters, and
+        the classic values sit right in the heart of the chaotic regime.
+    </p>
+
+    <table class="param-table">
+        <thead>
+            <tr>
+                <th>Symbol</th>
+                <th>Value</th>
+                <th>Meaning</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="symbol">&sigma;</td>
+                <td class="value">10</td>
+                <td>Prandtl number. Controls how quickly heat spreads compared to how quickly the fluid flows.</td>
+            </tr>
+            <tr>
+                <td class="symbol">&rho;</td>
+                <td class="value">28</td>
+                <td>Rayleigh number. Measures how big the temperature difference is between the top and bottom of the fluid.</td>
+            </tr>
+            <tr>
+                <td class="symbol">&beta;</td>
+                <td class="value">8/3</td>
+                <td>Geometric factor. Related to the aspect ratio of the convection cell.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Section 4: Applications — real-world fields where chaos theory appears -->
+<div class="section">
+    <div class="section-label">Applications</div>
+    <h2>Where this shows up in practice</h2>
+    <p>
+        Chaos theory started with weather, but the same math turns up across a wide
+        range of fields. Anywhere you find systems where outputs feed back into inputs,
+        you're likely to find chaotic behavior.
+    </p>
+
+    <ul class="app-list">
+        <li>
+            <span class="app-title">Weather and climate modeling.</span>
+            This is where Lorenz's work began. Chaotic sensitivity is the reason
+            weather forecasts lose accuracy after about 10 days, no matter how much
+            data you collect.
+        </li>
+        <li>
+            <span class="app-title">Fluid dynamics.</span>
+            Turbulent flow in pipes, around aircraft, and through the ocean follows
+            chaotic patterns. Understanding those patterns is a major part of modern
+            engineering.
+        </li>
+        <li>
+            <span class="app-title">Cardiology.</span>
+            A healthy heart rhythm actually has a small amount of chaotic variability.
+            When that variability disappears, it can be a warning sign of cardiac disease.
+        </li>
+        <li>
+            <span class="app-title">Cryptography.</span>
+            Chaotic systems produce outputs that look random but are fully deterministic.
+            That property makes them useful for generating encryption keys and secure
+            pseudo-random sequences.
+        </li>
+    </ul>
+</div>
+
+<!-- Footer -->
+<footer>
+    <a href="../index.html">Back to portfolio</a>
+    &nbsp;&middot;&nbsp;
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
+</footer>
+
+</div>
+
+<script>
+// ==========================================================================
+// Lorenz Attractor — animated 3D visualization
+// Ported from lorenz.py: same parameters, same Euler integration.
+// ==========================================================================
+
+(function () {
+    'use strict';
+
+    // --- Lorenz system parameters (identical to lorenz.py) ---
+    var SIGMA = 10.0;
+    var RHO   = 28.0;
+    var BETA  = 8.0 / 3.0;
+    var DT    = 0.01;
+    var STEPS = 10000;
+
+    // --- Euler integration ---
+    var xs = new Float64Array(STEPS);
+    var ys = new Float64Array(STEPS);
+    var zs = new Float64Array(STEPS);
+    var x = 0.1, y = 0.0, z = 0.0;
+
+    for (var i = 0; i < STEPS; i++) {
+        var dx = SIGMA * (y - x)     * DT;
+        var dy = (x * (RHO - z) - y) * DT;
+        var dz = (x * y - BETA * z)  * DT;
+        x += dx;
+        y += dy;
+        z += dz;
+        xs[i] = x;
+        ys[i] = y;
+        zs[i] = z;
+    }
+
+    // Time-color array [0, 1] for inferno colorscale
+    var colors = new Float64Array(STEPS);
+    for (var i = 0; i < STEPS; i++) colors[i] = i / (STEPS - 1);
+
+    // Inferno colorscale (sampled from matplotlib)
+    var inferno = [
+        [0.00, 'rgb(0,0,4)'],      [0.05, 'rgb(10,7,46)'],
+        [0.10, 'rgb(31,12,87)'],    [0.15, 'rgb(55,12,110)'],
+        [0.20, 'rgb(78,10,118)'],   [0.25, 'rgb(101,10,119)'],
+        [0.30, 'rgb(124,13,113)'],  [0.35, 'rgb(147,22,100)'],
+        [0.40, 'rgb(168,39,83)'],   [0.45, 'rgb(187,58,64)'],
+        [0.50, 'rgb(203,80,45)'],   [0.55, 'rgb(216,105,27)'],
+        [0.60, 'rgb(226,132,14)'],  [0.65, 'rgb(233,161,9)'],
+        [0.70, 'rgb(237,190,18)'],  [0.75, 'rgb(237,218,48)'],
+        [0.80, 'rgb(233,241,89)'],  [0.85, 'rgb(236,252,132)'],
+        [0.90, 'rgb(245,254,176)'], [0.95, 'rgb(252,254,215)'],
+        [1.00, 'rgb(252,255,252)']
+    ];
+
+    // --- Convert typed arrays to regular arrays (Plotly needs them) ---
+    var allX = Array.from(xs);
+    var allY = Array.from(ys);
+    var allZ = Array.from(zs);
+    var allC = Array.from(colors);
+
+    // --- DOM references ---
+    var plotDiv    = document.getElementById('plot');
+    var captionDiv = document.getElementById('caption');
+    var hudPhase   = document.getElementById('hud-phase');
+    var hudFill    = document.getElementById('hud-progress-fill');
+    var hudDetail  = document.getElementById('hud-detail');
+
+    // --- Trace 0: trajectory line ---
+    var trace = {
+        x: [allX[0]], y: [allY[0]], z: [allZ[0]],
+        mode: 'lines',
+        type: 'scatter3d',
+        line: {
+            color: [allC[0]],
+            colorscale: inferno,
+            width: 3,
+            cmin: 0, cmax: 1
+        },
+        hoverinfo: 'skip'
+    };
+
+    // --- Trace 1: leading point (bright dot at trajectory tip) ---
+    var leadingPoint = {
+        x: [allX[0]], y: [allY[0]], z: [allZ[0]],
+        mode: 'markers',
+        type: 'scatter3d',
+        marker: {
+            size: 4,
+            color: '#ffe0b2',
+            opacity: 1
+        },
+        hoverinfo: 'skip'
+    };
+
+    // Cinematic axis style — no labels, no ticks
+    var axStyle = {
+        title: '',
+        showticklabels: false,
+        showgrid: true,
+        gridcolor: '#1a1a1a',
+        zerolinecolor: '#222',
+        backgroundcolor: '#101010',
+        showspikes: false
+    };
+
+    var layout = {
+        paper_bgcolor: '#101010',
+        plot_bgcolor: '#101010',
+        scene: {
+            bgcolor: '#101010',
+            xaxis: axStyle,
+            yaxis: axStyle,
+            zaxis: axStyle,
+            camera: { eye: { x: 1.8, y: 1.8, z: 1.6 } },
+            dragmode: 'orbit'
+        },
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        showlegend: false
+    };
+
+    var config = {
+        responsive: true,
+        displayModeBar: false,
+        scrollZoom: false
+    };
+
+    Plotly.newPlot(plotDiv, [trace, leadingPoint], layout, config);
+
+    // --- Animation state ---
+    var DRAW_BATCH   = 20;
+    var ORBIT_FRAMES = 600;          // ~10s at 60fps
+
+    var phase       = 'draw';        // 'draw', 'orbit', or 'done'
+    var frame       = 0;
+    var drawnPoints = 1;
+    var orbitAngle  = 0;
+
+    // Camera parameters
+    var ORBIT_RADIUS    = 2.0;
+    var ORBIT_Z_BASE    = 0.7;
+    var ORBIT_Z_AMP     = 0.3;
+    var DRAW_Z_START    = 1.6;       // camera starts high
+    var DRAW_Z_END      = 0.7;       // descends to eye-level
+    // Elliptical orbit: x-radius and y-radius
+    var ORBIT_RX        = 2.2;
+    var ORBIT_RY        = 1.6;
+
+    // Pause-on-interaction state
+    var paused      = false;
+    var manualPause = false;         // true when paused via button
+    var resumeTimer = null;
+    var pauseStart  = 0;             // timestamp when pause began
+    var RESUME_DELAY = 5000;
+
+    // --- Control button references ---
+    var btnPause = document.getElementById('btn-pause');
+    var btnSkip  = document.getElementById('btn-skip');
+    var btnReset = document.getElementById('btn-reset');
+
+    // --- Educational captions keyed to draw progress ---
+    var captions = [
+        { at: 0.00, text: 'Starts from almost nothing \u002D just 0.1 off zero' },
+        { at: 0.15, text: 'First spiral forms around one of the fixed points' },
+        { at: 0.35, text: 'Jumps to the other side \u002D this is where it gets chaotic' },
+        { at: 0.58, text: 'Keeps switching lobes, never tracing the same path twice' },
+        { at: 0.82, text: 'The full butterfly \u002D same equations every time, never the same path' },
+        { at: 1.00, text: '' }
+    ];
+
+    function updateCaption(progress) {
+        var text = '';
+        for (var i = captions.length - 1; i >= 0; i--) {
+            if (progress >= captions[i].at) { text = captions[i].text; break; }
+        }
+        if (captionDiv.textContent !== text) {
+            captionDiv.style.opacity = '0';
+            setTimeout(function () {
+                captionDiv.textContent = text;
+                captionDiv.style.opacity = '1';
+            }, 300);
+        }
+    }
+
+    // --- HUD update helper ---
+    function updateHUD() {
+        if (paused) {
+            hudPhase.textContent = 'PAUSED';
+            hudPhase.classList.add('paused');
+            if (manualPause) {
+                hudDetail.textContent = 'Paused';
+            } else {
+                var elapsed = Date.now() - pauseStart;
+                var remaining = Math.max(0, Math.ceil((RESUME_DELAY - elapsed) / 1000));
+                hudDetail.textContent = 'Resuming in ' + remaining + 's\u2026';
+            }
+            // progress bar frozen at current position
+            return;
+        }
+
+        hudPhase.classList.remove('paused');
+
+        if (phase === 'draw') {
+            hudPhase.textContent = 'DRAWING';
+            var count = Math.min(drawnPoints, STEPS);
+            hudDetail.textContent = count.toLocaleString() + ' / ' + STEPS.toLocaleString() + ' points';
+            hudFill.style.width = ((count / STEPS) * 100).toFixed(1) + '%';
+        } else if (phase === 'orbit') {
+            var degrees = Math.round((frame / ORBIT_FRAMES) * 360);
+
+            hudPhase.textContent = 'ORBITING';
+            hudFill.style.width = ((frame / ORBIT_FRAMES) * 100).toFixed(1) + '%';
+            hudDetail.textContent = degrees + '\u00B0 / 360\u00B0';
+        } else {
+            // done
+            hudPhase.textContent = 'COMPLETE';
+            hudFill.style.width = '100%';
+            hudDetail.textContent = 'Press reset to replay';
+        }
+    }
+
+    // --- Camera helpers ---
+    function drawCameraEye(angle, progress) {
+        // Starts high, descends to eye-level as butterfly forms
+        var z = DRAW_Z_START + (DRAW_Z_END - DRAW_Z_START) * progress;
+        return {
+            x: ORBIT_RADIUS * Math.cos(angle),
+            y: ORBIT_RADIUS * Math.sin(angle),
+            z: z
+        };
+    }
+
+    function orbitCameraEye(angle) {
+        // Elliptical orbit with vertical sine-wave bob
+        return {
+            x: ORBIT_RX * Math.cos(angle),
+            y: ORBIT_RY * Math.sin(angle),
+            z: ORBIT_Z_BASE + ORBIT_Z_AMP * Math.sin(angle * 2)
+        };
+    }
+
+    // --- Transition helpers ---
+    function transitionToOrbit() {
+        phase = 'orbit';
+        frame = 0;
+        Plotly.restyle(plotDiv, { 'marker.opacity': [0] }, 1);
+        captionDiv.style.opacity = '0';
+        setTimeout(function () {
+            captionDiv.textContent = 'Drag to look around, or hit reset to run it again';
+            captionDiv.style.opacity = '1';
+        }, 300);
+    }
+
+    function transitionToDone() {
+        phase = 'done';
+        frame = ORBIT_FRAMES;
+        captionDiv.style.opacity = '0';
+        setTimeout(function () {
+            captionDiv.textContent = 'Press reset to replay';
+            captionDiv.style.opacity = '1';
+        }, 300);
+    }
+
+    function resetToStart() {
+        phase = 'draw';
+        frame = 0;
+        drawnPoints = 1;
+        orbitAngle = 0;
+        paused = false;
+        manualPause = false;
+        clearTimeout(resumeTimer);
+        btnPause.textContent = '⏸';
+
+        Plotly.restyle(plotDiv, {
+            x: [[allX[0]]], y: [[allY[0]]], z: [[allZ[0]]],
+            'line.color': [[allC[0]]]
+        }, 0);
+
+        Plotly.restyle(plotDiv, {
+            x: [[allX[0]]], y: [[allY[0]]], z: [[allZ[0]]],
+            'marker.opacity': [1]
+        }, 1);
+
+        Plotly.relayout(plotDiv, {
+            'scene.camera.eye': drawCameraEye(0, 0)
+        });
+    }
+
+    // --- Main animation loop ---
+    function tick() {
+        updateHUD();
+
+        if (paused) { requestAnimationFrame(tick); return; }
+
+        if (phase === 'draw') {
+            var target = Math.min(STEPS, drawnPoints + DRAW_BATCH);
+            drawnPoints = target;
+            var tipIdx = drawnPoints - 1;
+
+            Plotly.restyle(plotDiv, {
+                x: [allX.slice(0, drawnPoints)],
+                y: [allY.slice(0, drawnPoints)],
+                z: [allZ.slice(0, drawnPoints)],
+                'line.color': [allC.slice(0, drawnPoints)]
+            }, 0);
+
+            Plotly.restyle(plotDiv, {
+                x: [[allX[tipIdx]]],
+                y: [[allY[tipIdx]]],
+                z: [[allZ[tipIdx]]],
+                'marker.opacity': [1]
+            }, 1);
+
+            orbitAngle += 0.003;
+            var progress = drawnPoints / STEPS;
+            Plotly.relayout(plotDiv, {
+                'scene.camera.eye': drawCameraEye(orbitAngle, progress)
+            });
+
+            updateCaption(progress);
+
+            if (drawnPoints >= STEPS) {
+                transitionToOrbit();
+            }
+        } else if (phase === 'orbit') {
+            frame++;
+            orbitAngle += (2 * Math.PI) / ORBIT_FRAMES;
+            Plotly.relayout(plotDiv, {
+                'scene.camera.eye': orbitCameraEye(orbitAngle)
+            });
+
+            if (frame >= ORBIT_FRAMES) {
+                transitionToDone();
+            }
+        }
+        // 'done' phase: just keep the loop alive for HUD updates
+
+        requestAnimationFrame(tick);
+    }
+
+    // --- Pause on user interaction, resume after idle ---
+    plotDiv.addEventListener('mousedown', interactionPause);
+    plotDiv.addEventListener('touchstart', interactionPause);
+
+    function interactionPause() {
+        if (phase === 'done') return;
+        paused = true;
+        manualPause = false;
+        pauseStart = Date.now();
+        btnPause.textContent = '\u25B6';
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(function () {
+            if (!manualPause) {
+                paused = false;
+                btnPause.textContent = '\u23F8';
+            }
+        }, RESUME_DELAY);
+    }
+
+    // --- Control button handlers ---
+    btnPause.addEventListener('click', function () {
+        if (phase === 'done') return;
+        if (paused) {
+            // Unpause
+            paused = false;
+            manualPause = false;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u23F8';
+        } else {
+            // Manual pause
+            paused = true;
+            manualPause = true;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u25B6';
+        }
+    });
+
+    btnSkip.addEventListener('click', function () {
+        if (phase === 'done') return;
+
+        // Unpause first if paused
+        if (paused) {
+            paused = false;
+            manualPause = false;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u23F8';
+        }
+
+        if (phase === 'draw') {
+            // Instantly reveal full trajectory
+            drawnPoints = STEPS;
+            Plotly.restyle(plotDiv, {
+                x: [allX], y: [allY], z: [allZ],
+                'line.color': [allC]
+            }, 0);
+            transitionToOrbit();
+        } else if (phase === 'orbit') {
+            transitionToDone();
+        }
+    });
+
+    btnReset.addEventListener('click', function () {
+        resetToStart();
+    });
+
+    // Start the animation
+    requestAnimationFrame(tick);
+
+})();
+</script>
+
+</body>
+</html>

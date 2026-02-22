@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive visualization of the Sierpinski triangle - recursive construction and chaos game methods with animated fractal depth exploration.">
+<meta name="theme-color" content="#101010">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Sierpinski Triangle - Interactive Fractal Visualization">
+<meta property="og:description" content="Watch the Sierpinski triangle emerge through recursive subdivision or the chaos game. Explore fractal dimension, self-similarity, and the mathematics of infinite detail.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#9650;</text></svg>">
+<title>Sierpinski Triangle - Math Visualizations</title>
+<!-- MathJax 3 — renders LaTeX equations (\[ ... \]) into formatted math -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+/* Canvas wrapper — sits outside .container for full width */
+#canvas-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+#viz-canvas {
+    max-width: 100%;
+    height: 560px;
+    display: block;
+    margin: 0 auto;
+    background: #101010;
+}
+
+/* Status HUD overlay — bottom-left of canvas */
+#hud {
+    position: absolute;
+    bottom: 12px;
+    left: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 10px 16px 10px 14px;
+    min-width: 150px;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#hud-phase {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    transition: color 0.3s;
+}
+#hud-phase.paused {
+    color: #d4915e;
+}
+#hud-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+#hud-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.15s linear;
+}
+#hud-detail {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+/* Animation control buttons — bottom-right of canvas */
+#controls {
+    position: absolute;
+    bottom: 12px;
+    right: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+}
+#controls button {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+#controls button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #eee;
+}
+
+/* Slider controls — below the canvas */
+#sliders {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 16px;
+}
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-ui);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+.slider-group label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.slider-group label span {
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    min-width: 1.2em;
+    text-align: center;
+}
+.slider-group input[type="range"] {
+    width: 100px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+/* Method select dropdown — dark theme */
+#method-select {
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+#method-select:focus {
+    outline: 1px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Educational caption overlay at bottom of canvas area */
+#caption {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0 16px;
+    min-height: 40px;
+    transition: opacity 0.6s;
+}
+
+/* Responsive — tighter spacing on narrow screens */
+@media (max-width: 600px) {
+    #sliders {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-start;
+    }
+    .slider-group input[type="range"] {
+        width: 80px;
+    }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+    <a href="../index.html" class="nav-home">Math Visualizations</a>
+    <div class="nav-links">
+        <a href="lorenz.html">Lorenz</a>
+        <a href="mobius.html">Mobius</a>
+        <a href="klein.html">Klein</a>
+        <a href="sierpinski.html" class="active">Sierpinski</a>
+        <a href="mandelbrot.html">Mandelbrot</a>
+    </div>
+</nav>
+
+<div class="container">
+
+<!-- Header — page title and tagline -->
+<header>
+    <h1>The Sierpinski Triangle</h1>
+    <p class="tagline">A fractal that looks the same no matter how far you zoom in, more than a line, less than a plane</p>
+</header>
+
+</div><!-- end .container for header -->
+
+<!-- Animated Sierpinski triangle canvas -->
+<div id="canvas-wrapper">
+    <canvas id="viz-canvas"></canvas>
+    <div id="hud">
+        <div id="hud-phase"></div>
+        <div id="hud-progress"><div id="hud-progress-fill"></div></div>
+        <div id="hud-detail"></div>
+    </div>
+    <div id="controls">
+        <button id="btn-pause" title="Pause / Play">&#x23F8;</button>
+        <button id="btn-skip" title="Skip to end">&#x23ED;</button>
+        <button id="btn-reset" title="Reset">&#x21BA;</button>
+    </div>
+</div>
+<div id="sliders" style="max-width:960px;margin:0 auto;">
+    <div class="slider-group">
+        <label>Depth <span id="depth-val">7</span></label>
+        <input type="range" id="depth-slider" min="0" max="9" step="1" value="7">
+    </div>
+    <div class="slider-group">
+        <label>Method</label>
+        <select id="method-select">
+            <option value="recursive" selected>Recursive</option>
+            <option value="chaos">Chaos Game</option>
+        </select>
+    </div>
+</div>
+<div id="caption" style="max-width:960px;margin:0 auto;"></div>
+
+<div class="container">
+
+<!-- Section 1: Fractals — self-similarity explanation -->
+<div class="section">
+    <div class="section-label">Fractals</div>
+    <h2>Self-similarity at every scale</h2>
+    <p>
+        The Sierpinski triangle looks the same no matter how closely you zoom in. Pick any
+        corner of the triangle and magnify it, and you get the exact same shape. This property
+        is called self-similarity (it looks the same at every scale), and it's the defining
+        characteristic of a fractal.
+    </p>
+    <p>
+        The construction is deceptively simple: start with a triangle, remove the middle
+        quarter, and repeat forever. At each step, you're left with three copies of the
+        previous step, each half the size. The process never ends, and the result exists
+        somewhere between a one-dimensional line and a two-dimensional surface.
+    </p>
+</div>
+
+<!-- Section 2: Equations — recursive construction and fractal dimension -->
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Recursive construction</h2>
+    <p>
+        Two key quantities describe the Sierpinski triangle: the number of filled triangles
+        at each depth, and its fractal dimension.
+    </p>
+
+    <!-- Equation 1: Triangle count -->
+    <div class="equation-block">
+        \[ N_n = 3^n \]
+        <p>
+            After n iterations, there are 3<sup>n</sup> filled triangles. At depth 7, that's
+            2,187 triangles. At depth 9, it's 19,683.
+        </p>
+    </div>
+
+    <!-- Equation 2: Fractal dimension -->
+    <div class="equation-block">
+        \[ D = \frac{\log 3}{\log 2} \approx 1.585 \]
+        <p>
+            The Sierpinski triangle has a fractal dimension of about 1.585. It's more than
+            a line (dimension 1) but less than a filled surface (dimension 2). Each iteration
+            triples the number of pieces while halving their size, and log(3)/log(2) captures
+            exactly that ratio.
+        </p>
+    </div>
+</div>
+
+<!-- Section 3: Methods — the chaos game -->
+<div class="section">
+    <div class="section-label">Methods</div>
+    <h2>The chaos game</h2>
+    <p>
+        There's an entirely different way to construct the Sierpinski triangle. Pick three
+        points as vertices. Start from any random point. Then, repeatedly: choose one of the
+        three vertices at random and move halfway toward it. Plot the new point.
+    </p>
+    <p>
+        It seems like this should produce random noise. But after a few hundred points, the
+        Sierpinski triangle begins to emerge. After thousands of points, it's unmistakable.
+        This is called the "chaos game," and it reveals a deep connection between random
+        processes and fractal patterns.
+    </p>
+</div>
+
+<!-- Footer -->
+<footer>
+    <a href="../index.html">Back to portfolio</a>
+    &nbsp;&middot;&nbsp;
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
+</footer>
+
+</div>
+
+<script>
+// ==========================================================================
+// Sierpinski Triangle — animated fractal visualization
+// Two methods: recursive subdivision and chaos game.
+// ==========================================================================
+
+(function () {
+    'use strict';
+
+    // --- DOM references ---
+    var canvas     = document.getElementById('viz-canvas');
+    var ctx        = canvas.getContext('2d');
+    var captionDiv = document.getElementById('caption');
+    var hudPhase   = document.getElementById('hud-phase');
+    var hudFill    = document.getElementById('hud-progress-fill');
+    var hudDetail  = document.getElementById('hud-detail');
+    var btnPause   = document.getElementById('btn-pause');
+    var btnSkip    = document.getElementById('btn-skip');
+    var btnReset   = document.getElementById('btn-reset');
+    var depthSlider = document.getElementById('depth-slider');
+    var depthVal    = document.getElementById('depth-val');
+    var methodSelect = document.getElementById('method-select');
+
+    // --- Canvas setup with high-DPI support ---
+    var CSS_W = 800;
+    var CSS_H = 700;
+    var dpr = window.devicePixelRatio || 1;
+
+    function setupCanvas() {
+        dpr = window.devicePixelRatio || 1;
+        canvas.width = CSS_W * dpr;
+        canvas.height = CSS_H * dpr;
+        canvas.style.width = '100%';
+        canvas.style.maxWidth = CSS_W + 'px';
+        canvas.style.height = '560px';
+        // Set aspect ratio via attribute for proper sizing
+        canvas.setAttribute('width', CSS_W * dpr);
+        canvas.setAttribute('height', CSS_H * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    setupCanvas();
+
+    // --- Colors ---
+    var BG_COLOR      = '#101010';
+    var ACCENT_COLOR  = '#c8a26a';
+    var depthColors = [
+        '#c8a26a', '#d4915e', '#cb6044', '#a83a5c',
+        '#7b2382', '#4c1085', '#280b54', '#0d0829',
+        '#1a0a3e', '#2d1160'
+    ];
+
+    // --- Triangle vertices (equilateral, centered in canvas) ---
+    // Positioned with some padding
+    var PADDING = 40;
+    var triW = CSS_W - 2 * PADDING;
+    var triH = triW * (Math.sqrt(3) / 2);
+    // If triH exceeds canvas, scale down
+    if (triH > CSS_H - 2 * PADDING) {
+        triH = CSS_H - 2 * PADDING;
+        triW = triH / (Math.sqrt(3) / 2);
+    }
+    var cx = CSS_W / 2;
+    var topY = (CSS_H - triH) / 2;
+
+    // Vertices: top center, bottom-left, bottom-right
+    var vA = { x: cx, y: topY };
+    var vB = { x: cx - triW / 2, y: topY + triH };
+    var vC = { x: cx + triW / 2, y: topY + triH };
+
+    // --- Animation state ---
+    var targetDepth = 7;
+    var method = 'recursive';    // 'recursive' or 'chaos'
+    var paused = false;
+    var animId = null;
+
+    // Recursive state
+    var currentDepth = 0;        // depth currently being displayed
+    var frameCount = 0;
+    var FRAMES_PER_DEPTH = 90;   // frames to wait before incrementing depth (~1.5s)
+    var animDone = false;
+
+    // Chaos game state
+    var chaosPoints = [];
+    var CHAOS_TOTAL = 50000;
+    var CHAOS_BATCH = 100;
+    var chaosX = 0;
+    var chaosY = 0;
+    var chaosInitialized = false;
+
+    // --- Precomputed recursive triangles by depth level ---
+    // trianglesByLevel[d] = array of triangles that FIRST appear at depth d
+    // Each triangle is {ax, ay, bx, by, cx, cy}
+    var trianglesByLevel = [];
+
+    function computeTriangles(ax, ay, bx, by, ccx, ccy, depth, maxDepth) {
+        if (depth === maxDepth) {
+            // This triangle is a "leaf" at this depth
+            if (!trianglesByLevel[depth]) trianglesByLevel[depth] = [];
+            trianglesByLevel[depth].push({ax: ax, ay: ay, bx: bx, by: by, cx: ccx, cy: ccy});
+            return;
+        }
+        // Midpoints
+        var abx = (ax + bx) / 2, aby = (ay + by) / 2;
+        var bcx = (bx + ccx) / 2, bcy = (by + ccy) / 2;
+        var acx = (ax + ccx) / 2, acy = (ay + ccy) / 2;
+        // Recurse on 3 sub-triangles
+        computeTriangles(ax, ay, abx, aby, acx, acy, depth + 1, maxDepth);
+        computeTriangles(abx, aby, bx, by, bcx, bcy, depth + 1, maxDepth);
+        computeTriangles(acx, acy, bcx, bcy, ccx, ccy, depth + 1, maxDepth);
+    }
+
+    // Build the "removed" triangles for the cutout animation
+    // removedByLevel[d] = middle triangles removed at iteration d (d >= 1)
+    var removedByLevel = [];
+
+    function computeRemovedTriangles(ax, ay, bx, by, ccx, ccy, depth, maxDepth) {
+        if (depth >= maxDepth) return;
+        // Midpoints
+        var abx = (ax + bx) / 2, aby = (ay + by) / 2;
+        var bcx = (bx + ccx) / 2, bcy = (by + ccy) / 2;
+        var acx = (ax + ccx) / 2, acy = (ay + ccy) / 2;
+        // The middle triangle (removed at this depth)
+        if (!removedByLevel[depth + 1]) removedByLevel[depth + 1] = [];
+        removedByLevel[depth + 1].push({ax: abx, ay: aby, bx: bcx, by: bcy, cx: acx, cy: acy});
+        // Recurse on 3 sub-triangles
+        computeRemovedTriangles(ax, ay, abx, aby, acx, acy, depth + 1, maxDepth);
+        computeRemovedTriangles(abx, aby, bx, by, bcx, bcy, depth + 1, maxDepth);
+        computeRemovedTriangles(acx, acy, bcx, bcy, ccx, ccy, depth + 1, maxDepth);
+    }
+
+    function precompute() {
+        removedByLevel = [];
+        computeRemovedTriangles(vA.x, vA.y, vB.x, vB.y, vC.x, vC.y, 0, targetDepth);
+    }
+
+    // --- Drawing helpers ---
+    function clearCanvas() {
+        ctx.fillStyle = BG_COLOR;
+        ctx.fillRect(0, 0, CSS_W, CSS_H);
+    }
+
+    function fillTriangle(ax, ay, bx, by, ccx, ccy, color) {
+        ctx.beginPath();
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+        ctx.lineTo(ccx, ccy);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+    }
+
+    // Draw the big filled triangle
+    function drawBaseTriangle() {
+        fillTriangle(vA.x, vA.y, vB.x, vB.y, vC.x, vC.y, ACCENT_COLOR);
+    }
+
+    // Draw removed triangles up to a given depth (in BG color to "cut them out")
+    function drawRemovedUpTo(depth) {
+        for (var d = 1; d <= depth; d++) {
+            if (!removedByLevel[d]) continue;
+            var tris = removedByLevel[d];
+            // Use a slightly different shade per depth for visual interest
+            // Actually, we want the cut-out to reveal the background
+            ctx.fillStyle = BG_COLOR;
+            for (var i = 0; i < tris.length; i++) {
+                var t = tris[i];
+                ctx.beginPath();
+                ctx.moveTo(t.ax, t.ay);
+                ctx.lineTo(t.bx, t.by);
+                ctx.lineTo(t.cx, t.cy);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+    }
+
+    // Draw a depth-colored Sierpinski at a given depth (final state, colored by depth)
+    function drawColoredSierpinski(ax, ay, bx, by, ccx, ccy, depth) {
+        if (depth === 0) {
+            fillTriangle(ax, ay, bx, by, ccx, ccy, ACCENT_COLOR);
+            return;
+        }
+        var abx = (ax + bx) / 2, aby = (ay + by) / 2;
+        var bcx = (bx + ccx) / 2, bcy = (by + ccy) / 2;
+        var acx = (ax + ccx) / 2, acy = (ay + ccy) / 2;
+        drawColoredSierpinski(ax, ay, abx, aby, acx, acy, depth - 1);
+        drawColoredSierpinski(abx, aby, bx, by, bcx, bcy, depth - 1);
+        drawColoredSierpinski(acx, acy, bcx, bcy, ccx, ccy, depth - 1);
+    }
+
+    // --- Caption system ---
+    function setCaption(text) {
+        if (captionDiv.textContent !== text) {
+            captionDiv.style.opacity = '0';
+            setTimeout(function () {
+                captionDiv.textContent = text;
+                captionDiv.style.opacity = '1';
+            }, 300);
+        }
+    }
+
+    // --- HUD update ---
+    function updateHUD() {
+        if (paused) {
+            hudPhase.textContent = 'PAUSED';
+            hudPhase.classList.add('paused');
+            hudDetail.textContent = 'Paused';
+            return;
+        }
+
+        hudPhase.classList.remove('paused');
+
+        if (method === 'recursive') {
+            if (animDone) {
+                hudPhase.textContent = 'COMPLETE';
+                hudFill.style.width = '100%';
+                hudDetail.textContent = Math.pow(3, targetDepth).toLocaleString() + ' triangles at depth ' + targetDepth;
+            } else {
+                hudPhase.textContent = 'BUILDING';
+                var progress = targetDepth > 0 ? (currentDepth / targetDepth) * 100 : 100;
+                hudFill.style.width = progress.toFixed(1) + '%';
+                hudDetail.textContent = 'Depth ' + currentDepth + ' / ' + targetDepth;
+            }
+        } else {
+            // Chaos game
+            if (animDone) {
+                hudPhase.textContent = 'COMPLETE';
+                hudFill.style.width = '100%';
+                hudDetail.textContent = CHAOS_TOTAL.toLocaleString() + ' points plotted';
+            } else {
+                hudPhase.textContent = 'PLOTTING';
+                var progress = (chaosPoints.length / CHAOS_TOTAL) * 100;
+                hudFill.style.width = progress.toFixed(1) + '%';
+                hudDetail.textContent = chaosPoints.length.toLocaleString() + ' / ' + CHAOS_TOTAL.toLocaleString() + ' points';
+            }
+        }
+    }
+
+    // --- Recursive animation ---
+    var recursiveCaptions = [
+        { at: 0, text: 'A single filled triangle, the starting point' },
+        { at: 1, text: 'Remove the middle quarter, leaving three copies' },
+        { at: 2, text: 'Each copy gets the same treatment. Nine triangles remain' },
+        { at: 3, text: 'The pattern repeats at every scale' },
+        { at: 5, text: 'Self-similarity emerges. Zoom into any corner and see the whole' },
+        { at: 7, text: 'The fractal takes shape. Dimension 1.585' }
+    ];
+
+    function getRecursiveCaption(depth) {
+        var text = '';
+        for (var i = recursiveCaptions.length - 1; i >= 0; i--) {
+            if (depth >= recursiveCaptions[i].at) {
+                text = recursiveCaptions[i].text;
+                break;
+            }
+        }
+        return text;
+    }
+
+    function tickRecursive() {
+        if (paused) {
+            updateHUD();
+            animId = requestAnimationFrame(tickRecursive);
+            return;
+        }
+
+        frameCount++;
+
+        if (!animDone) {
+            if (frameCount >= FRAMES_PER_DEPTH) {
+                frameCount = 0;
+                if (currentDepth < targetDepth) {
+                    currentDepth++;
+                    // Redraw
+                    clearCanvas();
+                    drawBaseTriangle();
+                    drawRemovedUpTo(currentDepth);
+                    setCaption(getRecursiveCaption(currentDepth));
+                } else {
+                    animDone = true;
+                    setCaption('Complete! Adjust depth or switch to the chaos game');
+                }
+            }
+        }
+
+        updateHUD();
+        animId = requestAnimationFrame(tickRecursive);
+    }
+
+    function startRecursive() {
+        method = 'recursive';
+        currentDepth = 0;
+        frameCount = 0;
+        animDone = false;
+        paused = false;
+        btnPause.textContent = '\u23F8';
+
+        precompute();
+        clearCanvas();
+        drawBaseTriangle();
+        setCaption(getRecursiveCaption(0));
+        updateHUD();
+
+        if (targetDepth === 0) {
+            animDone = true;
+            setCaption('Depth 0: just the base triangle');
+        }
+
+        if (animId) cancelAnimationFrame(animId);
+        animId = requestAnimationFrame(tickRecursive);
+    }
+
+    // --- Chaos game animation ---
+    function initChaos() {
+        chaosPoints = [];
+        // Start from a random point inside the triangle
+        // Use barycentric coordinates
+        var r1 = Math.random(), r2 = Math.random();
+        if (r1 + r2 > 1) { r1 = 1 - r1; r2 = 1 - r2; }
+        chaosX = vA.x + r1 * (vB.x - vA.x) + r2 * (vC.x - vA.x);
+        chaosY = vA.y + r1 * (vB.y - vA.y) + r2 * (vC.y - vA.y);
+        chaosInitialized = true;
+    }
+
+    // Pre-render chaos points onto an offscreen buffer for performance
+    var chaosBuffer = null;
+    var chaosCtx = null;
+
+    function setupChaosBuffer() {
+        chaosBuffer = document.createElement('canvas');
+        chaosBuffer.width = CSS_W * dpr;
+        chaosBuffer.height = CSS_H * dpr;
+        chaosCtx = chaosBuffer.getContext('2d');
+        chaosCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        chaosCtx.fillStyle = BG_COLOR;
+        chaosCtx.fillRect(0, 0, CSS_W, CSS_H);
+    }
+
+    function tickChaos() {
+        if (paused) {
+            updateHUD();
+            animId = requestAnimationFrame(tickChaos);
+            return;
+        }
+
+        if (!animDone) {
+            var vertices = [vA, vB, vC];
+            var count = Math.min(CHAOS_BATCH, CHAOS_TOTAL - chaosPoints.length);
+
+            chaosCtx.fillStyle = ACCENT_COLOR;
+            for (var i = 0; i < count; i++) {
+                var v = vertices[Math.floor(Math.random() * 3)];
+                chaosX = (chaosX + v.x) / 2;
+                chaosY = (chaosY + v.y) / 2;
+                chaosPoints.push({x: chaosX, y: chaosY});
+                // Plot as 1px dot
+                chaosCtx.fillRect(chaosX - 0.5, chaosY - 0.5, 1, 1);
+            }
+
+            // Copy buffer to main canvas
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(chaosBuffer, 0, 0);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            if (chaosPoints.length >= CHAOS_TOTAL) {
+                animDone = true;
+                setCaption('Complete! 50,000 random steps reveal a fractal pattern');
+            } else if (chaosPoints.length < 500) {
+                setCaption('Random points begin to cluster...');
+            } else if (chaosPoints.length < 5000) {
+                setCaption('The triangle emerges from apparent randomness');
+            } else if (chaosPoints.length < 20000) {
+                setCaption('Thousands of points. The fractal structure is unmistakable');
+            }
+        }
+
+        updateHUD();
+        animId = requestAnimationFrame(tickChaos);
+    }
+
+    function startChaos() {
+        method = 'chaos';
+        animDone = false;
+        paused = false;
+        btnPause.textContent = '\u23F8';
+
+        initChaos();
+        setupChaosBuffer();
+        clearCanvas();
+        setCaption('Starting the chaos game...');
+        updateHUD();
+
+        if (animId) cancelAnimationFrame(animId);
+        animId = requestAnimationFrame(tickChaos);
+    }
+
+    // --- Skip to end ---
+    function skipToEnd() {
+        if (animDone) return;
+
+        if (paused) {
+            paused = false;
+            btnPause.textContent = '\u23F8';
+        }
+
+        if (method === 'recursive') {
+            currentDepth = targetDepth;
+            animDone = true;
+            clearCanvas();
+            drawBaseTriangle();
+            drawRemovedUpTo(currentDepth);
+            setCaption('Complete! Adjust depth or switch to the chaos game');
+        } else {
+            // Finish chaos game
+            var vertices = [vA, vB, vC];
+            var remaining = CHAOS_TOTAL - chaosPoints.length;
+            chaosCtx.fillStyle = ACCENT_COLOR;
+            for (var i = 0; i < remaining; i++) {
+                var v = vertices[Math.floor(Math.random() * 3)];
+                chaosX = (chaosX + v.x) / 2;
+                chaosY = (chaosY + v.y) / 2;
+                chaosPoints.push({x: chaosX, y: chaosY});
+                chaosCtx.fillRect(chaosX - 0.5, chaosY - 0.5, 1, 1);
+            }
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(chaosBuffer, 0, 0);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            animDone = true;
+            setCaption('Complete! 50,000 random steps reveal a fractal pattern');
+        }
+
+        updateHUD();
+    }
+
+    // --- Reset ---
+    function resetAnimation() {
+        if (animId) cancelAnimationFrame(animId);
+        if (method === 'recursive') {
+            startRecursive();
+        } else {
+            startChaos();
+        }
+    }
+
+    // --- Control event listeners ---
+    btnPause.addEventListener('click', function () {
+        if (animDone) return;
+        if (paused) {
+            paused = false;
+            btnPause.textContent = '\u23F8';
+        } else {
+            paused = true;
+            btnPause.textContent = '\u25B6';
+        }
+        updateHUD();
+    });
+
+    btnSkip.addEventListener('click', function () {
+        skipToEnd();
+    });
+
+    btnReset.addEventListener('click', function () {
+        resetAnimation();
+    });
+
+    depthSlider.addEventListener('input', function () {
+        targetDepth = parseInt(this.value, 10);
+        depthVal.textContent = targetDepth;
+
+        if (method === 'recursive') {
+            // If animation is done, instantly show the new depth
+            // If running, restart with new depth
+            if (animId) cancelAnimationFrame(animId);
+            startRecursive();
+        }
+        // For chaos game, depth slider doesn't apply — no restart needed
+    });
+
+    methodSelect.addEventListener('change', function () {
+        var newMethod = this.value;
+        if (animId) cancelAnimationFrame(animId);
+        if (newMethod === 'recursive') {
+            startRecursive();
+        } else {
+            startChaos();
+        }
+    });
+
+    // --- Handle window resize for high-DPI changes ---
+    window.addEventListener('resize', function () {
+        var newDpr = window.devicePixelRatio || 1;
+        if (newDpr !== dpr) {
+            setupCanvas();
+            // Redraw current state
+            if (method === 'recursive') {
+                precompute();
+                clearCanvas();
+                drawBaseTriangle();
+                drawRemovedUpTo(currentDepth);
+            } else if (chaosBuffer) {
+                // For chaos, we need to redraw from the buffer
+                // Simplest: restart
+                // But better: just rescale the buffer
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.drawImage(chaosBuffer, 0, 0);
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            }
+        }
+    });
+
+    // --- Start ---
+    startRecursive();
+
+})();
+</script>
+
+</body>
+</html>

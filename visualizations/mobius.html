@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive 3D visualization of the Mobius strip - a non-orientable surface with only one side and one edge, rendered with configurable half-twists and width.">
+<meta name="theme-color" content="#101010">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Mobius Strip - Interactive 3D Topology Visualization">
+<meta property="og:description" content="Explore the Mobius strip: animated 3D surface with adjustable half-twists, parametric equations, and connections to Klein bottles.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♾️</text></svg>">
+<title>Mobius Strip - Math Visualizations</title>
+<!-- Plotly.js — interactive 3D plotting and animation -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<!-- MathJax 3 — renders LaTeX equations (\[ ... \]) into formatted math -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+/* 3D plot wrapper — sits outside .container for full width */
+#plot-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+#plot {
+    width: 100%;
+    height: 560px;
+}
+/* Status HUD overlay — bottom-left of plot */
+#hud {
+    position: absolute;
+    bottom: 112px;
+    left: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 10px 16px 10px 14px;
+    min-width: 150px;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#hud-phase {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    transition: color 0.3s;
+}
+#hud-phase.paused {
+    color: #d4915e;
+}
+#hud-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+#hud-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.15s linear;
+}
+#hud-detail {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+/* Animation control buttons — bottom-right of plot */
+#controls {
+    position: absolute;
+    bottom: 112px;
+    right: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+}
+#controls button {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+#controls button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #eee;
+}
+
+/* Sliders — glassmorphic parameter controls */
+#sliders {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding: 12px 16px;
+}
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+.slider-group label {
+    min-width: 100px;
+    white-space: nowrap;
+}
+.slider-group label span {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+.slider-group input[type="range"] {
+    width: 120px;
+    accent-color: var(--accent);
+}
+
+/* Educational caption overlay at bottom of plot area */
+#caption {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0 16px;
+    min-height: 40px;
+    transition: opacity 0.6s;
+}
+
+/* Responsive — tighter spacing on narrow screens */
+@media (max-width: 600px) {
+    #plot { height: 360px; }
+    #sliders {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
+    }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+    <a href="../index.html" class="nav-home">Math Visualizations</a>
+    <div class="nav-links">
+        <a href="lorenz.html">Lorenz</a>
+        <a href="mobius.html" class="active">Mobius</a>
+        <a href="klein.html">Klein</a>
+        <a href="sierpinski.html">Sierpinski</a>
+        <a href="mandelbrot.html">Mandelbrot</a>
+    </div>
+</nav>
+
+<div class="container">
+
+<!-- Header — page title and tagline -->
+<header>
+    <h1>The M&ouml;bius Strip</h1>
+    <p class="tagline">A surface with only one side and one edge. A fundamental object in topology</p>
+</header>
+
+</div><!-- end .container for header -->
+
+<!-- Animated 3D Mobius strip — draws progressively, then orbits -->
+<div id="plot-wrapper">
+    <div id="plot"></div>
+    <div id="hud">
+        <div id="hud-phase"></div>
+        <div id="hud-progress"><div id="hud-progress-fill"></div></div>
+        <div id="hud-detail"></div>
+    </div>
+    <div id="controls">
+        <button id="btn-pause" title="Pause / Play">&#x23F8;</button>
+        <button id="btn-skip" title="Skip phase">&#x23ED;</button>
+        <button id="btn-reset" title="Reset">&#x21BA;</button>
+    </div>
+    <div id="sliders">
+        <div class="slider-group">
+            <label>Half-twists <span id="twist-val">1</span></label>
+            <input type="range" id="twist-slider" min="1" max="5" step="1" value="1">
+        </div>
+        <div class="slider-group">
+            <label>Width <span id="width-val">0.40</span></label>
+            <input type="range" id="width-slider" min="0.1" max="0.8" step="0.05" value="0.4">
+        </div>
+    </div>
+    <div id="caption"></div>
+</div>
+
+<div class="container">
+
+<!-- Section 1: Topology — what makes the Mobius strip special -->
+<div class="section">
+    <div class="section-label">Topology</div>
+    <h2>A surface with only one side</h2>
+    <p>
+        Imagine an ant walking along the surface of a M&ouml;bius strip. Without ever
+        crossing an edge, the ant can reach every point on what appears to be "both sides"
+        of the strip. That is because there is only one side. If you take a pen and draw
+        a line down the center, you will trace a path that covers the entire surface before
+        returning to its starting point.
+    </p>
+    <p>
+        The same is true of the boundary. An ordinary paper loop has two edges: an
+        inner edge and an outer edge. The M&ouml;bius strip has only one. You can verify
+        this by running your finger along the edge: you will travel the full length of the
+        boundary without lifting your finger, arriving back where you started.
+    </p>
+    <p>
+        This means there's no way to label one side "top" and the other "bottom" across
+        the whole thing. Any attempt to paint one side red and the other blue will fail.
+        The two colors inevitably run into each other.
+    </p>
+</div>
+
+<!-- Section 2: Equations — parametric construction of the strip -->
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Parametric construction</h2>
+    <p>
+        The M&ouml;bius strip can be described by three parametric equations that map two
+        parameters, u and v, to a point in 3D space. The parameter u sweeps around the
+        loop from 0 to 2&pi;, while v sweeps across the width of the strip.
+    </p>
+
+    <!-- Equation 1: x(u,v) -->
+    <div class="equation-block">
+        \[ x(u,v) = \bigl(1 + v\cos\tfrac{u}{2}\bigr)\cos u \]
+        <p>
+            The x-coordinate combines the circular sweep (cos u) with a width modulation
+            that depends on half the angle (cos u/2). This half-angle term is what creates
+            the twist.
+        </p>
+    </div>
+
+    <!-- Equation 2: y(u,v) -->
+    <div class="equation-block">
+        \[ y(u,v) = \bigl(1 + v\cos\tfrac{u}{2}\bigr)\sin u \]
+        <p>
+            The y-coordinate works the same way as x, but with sin u instead of cos u.
+            Together, x and y trace a circle in the horizontal plane, modulated by the
+            strip width.
+        </p>
+    </div>
+
+    <!-- Equation 3: z(u,v) -->
+    <div class="equation-block">
+        \[ z(u,v) = v\sin\tfrac{u}{2} \]
+        <p>
+            The z-coordinate lifts the strip out of the plane. The sin(u/2) term starts
+            at zero, rises to 1 at u = &pi;, and returns to zero at u = 2&pi;. But because
+            it uses u/2 instead of u, the strip makes only a half-twist before closing,
+            which is exactly what produces the one-sided topology.
+        </p>
+    </div>
+
+    <p class="note">
+        The key insight is the u/2 factor. A full loop around the strip (u goes from 0 to
+        2&pi;) produces only a half-rotation (u/2 goes from 0 to &pi;) of the cross-section.
+        This half-twist is what connects the "top" to the "bottom," creating a single
+        continuous surface.
+    </p>
+</div>
+
+<!-- Section 3: Connections — from Mobius to Klein and beyond -->
+<div class="section">
+    <div class="section-label">Connections</div>
+    <h2>From M&ouml;bius to Klein</h2>
+    <p>
+        If you take two M&ouml;bius strips and glue them together along their single edges,
+        the result is a Klein bottle, a closed surface with no inside or outside. The
+        Klein bottle cannot exist in three-dimensional space without intersecting itself, but
+        it lives naturally in four dimensions. The M&ouml;bius strip, then, is the simplest
+        building block of non-orientable geometry.
+    </p>
+    <p>
+        The M&ouml;bius strip also shows up in surprisingly practical places. Conveyor belts
+        are sometimes given a half-twist so that the belt wears evenly on "both sides."
+        Since there is really only one side, every part of the belt surface contacts the
+        rollers equally. The same principle has been applied to continuous-loop recording
+        tapes and printer ribbons.
+    </p>
+    <p>
+        In mathematics, the M&ouml;bius strip is a key example in the study of shapes and
+        surfaces. It demonstrates that not all surfaces are orientable, and it plays a role
+        in understanding how different surfaces relate to each other.
+    </p>
+</div>
+
+<!-- Footer -->
+<footer>
+    <a href="../index.html">Back to portfolio</a>
+    &nbsp;&middot;&nbsp;
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
+</footer>
+
+</div>
+
+<script>
+// ==========================================================================
+// Mobius Strip — animated 3D visualization
+// Progressive surface reveal with camera orbit, configurable parameters.
+// ==========================================================================
+
+(function () {
+    'use strict';
+
+    // --- Surface parameters ---
+    var U_STEPS = 80;
+    var V_STEPS = 20;
+    var TWO_PI = 2 * Math.PI;
+
+    // Defaults
+    var nTwists = 1;
+    var halfWidth = 0.4;
+
+    // Golden/amber colorscale
+    var colorscale = [
+        [0, 'rgb(30,10,60)'],
+        [0.5, 'rgb(120,60,20)'],
+        [1, 'rgb(200,162,106)']
+    ];
+
+    // --- Compute the Mobius strip surface data ---
+    function computeSurface(twists, W, uMax) {
+        // uMax allows partial reveal (0 to TWO_PI)
+        var uSteps = Math.max(2, Math.round((uMax / TWO_PI) * U_STEPS));
+        var xData = [];
+        var yData = [];
+        var zData = [];
+
+        for (var i = 0; i <= uSteps; i++) {
+            var u = (i / U_STEPS) * TWO_PI;
+            if (u > uMax) u = uMax;
+            var xRow = [];
+            var yRow = [];
+            var zRow = [];
+            for (var j = 0; j <= V_STEPS; j++) {
+                var v = -W + (2 * W * j) / V_STEPS;
+                var cosHalf = Math.cos(twists * u / 2);
+                var sinHalf = Math.sin(twists * u / 2);
+                var r = 1 + v * cosHalf;
+                xRow.push(r * Math.cos(u));
+                yRow.push(r * Math.sin(u));
+                zRow.push(v * sinHalf);
+            }
+            xData.push(xRow);
+            yData.push(yRow);
+            zData.push(zRow);
+        }
+
+        return { x: xData, y: yData, z: zData };
+    }
+
+    // --- Compute full surface for initial plot ---
+    var fullSurface = computeSurface(nTwists, halfWidth, TWO_PI);
+
+    // --- DOM references ---
+    var plotDiv    = document.getElementById('plot');
+    var captionDiv = document.getElementById('caption');
+    var hudPhase   = document.getElementById('hud-phase');
+    var hudFill    = document.getElementById('hud-progress-fill');
+    var hudDetail  = document.getElementById('hud-detail');
+
+    // Slider references
+    var twistSlider = document.getElementById('twist-slider');
+    var widthSlider = document.getElementById('width-slider');
+    var twistVal    = document.getElementById('twist-val');
+    var widthVal    = document.getElementById('width-val');
+
+    // --- Surface trace ---
+    var trace = {
+        x: [[fullSurface.x[0][0]]],
+        y: [[fullSurface.y[0][0]]],
+        z: [[fullSurface.z[0][0]]],
+        type: 'surface',
+        colorscale: colorscale,
+        showscale: false,
+        opacity: 0.92,
+        hoverinfo: 'skip',
+        lighting: { ambient: 0.6, diffuse: 0.5, specular: 0.2, roughness: 0.5 },
+        lightposition: { x: 100, y: 200, z: 300 }
+    };
+
+    // Cinematic axis style — no labels, no ticks
+    var axStyle = {
+        title: '',
+        showticklabels: false,
+        showgrid: true,
+        gridcolor: '#1a1a1a',
+        zerolinecolor: '#222',
+        backgroundcolor: '#101010',
+        showspikes: false
+    };
+
+    var layout = {
+        paper_bgcolor: '#101010',
+        plot_bgcolor: '#101010',
+        scene: {
+            bgcolor: '#101010',
+            xaxis: axStyle,
+            yaxis: axStyle,
+            zaxis: axStyle,
+            camera: { eye: { x: 0.8, y: 0.8, z: 2.2 } },
+            dragmode: 'orbit'
+        },
+        margin: { l: 0, r: 0, t: 0, b: 0 },
+        showlegend: false
+    };
+
+    var config = {
+        responsive: true,
+        displayModeBar: false,
+        scrollZoom: false
+    };
+
+    Plotly.newPlot(plotDiv, [trace], layout, config);
+
+    // --- Animation state ---
+    var DRAW_FRAMES  = 120;   // ~2 seconds at 60fps
+    var ORBIT_FRAMES = 200;
+
+    var phase       = 'draw';   // 'draw', 'orbit', or 'done'
+    var frame       = 0;
+    var orbitAngle  = 0;
+
+    // Camera parameters
+    var ORBIT_RADIUS = 1.2;
+    var ORBIT_Z_BASE = 2.0;
+    var ORBIT_Z_AMP  = 0.2;
+    var ORBIT_RX     = 1.2;
+    var ORBIT_RY     = 1.0;
+
+    // Pause-on-interaction state
+    var paused      = false;
+    var manualPause = false;
+    var resumeTimer = null;
+    var pauseStart  = 0;
+    var RESUME_DELAY = 5000;
+
+    // --- Control button references ---
+    var btnPause = document.getElementById('btn-pause');
+    var btnSkip  = document.getElementById('btn-skip');
+    var btnReset = document.getElementById('btn-reset');
+
+    // --- Educational captions keyed to draw progress ---
+    var captions = [
+        { at: 0.00, text: 'Building the strip from the first cross-section...' },
+        { at: 0.20, text: 'The surface curves through 3D space as u sweeps around' },
+        { at: 0.45, text: 'Halfway around. The cross-section has rotated 90\u00B0' },
+        { at: 0.70, text: 'Almost closed. Notice how "top" connects to "bottom"' },
+        { at: 0.95, text: 'The half-twist is complete. One side, one edge' },
+        { at: 1.00, text: '' }
+    ];
+
+    function updateCaption(progress) {
+        var text = '';
+        for (var i = captions.length - 1; i >= 0; i--) {
+            if (progress >= captions[i].at) { text = captions[i].text; break; }
+        }
+        if (captionDiv.textContent !== text) {
+            captionDiv.style.opacity = '0';
+            setTimeout(function () {
+                captionDiv.textContent = text;
+                captionDiv.style.opacity = '1';
+            }, 300);
+        }
+    }
+
+    // --- HUD update helper ---
+    function updateHUD() {
+        if (paused) {
+            hudPhase.textContent = 'PAUSED';
+            hudPhase.classList.add('paused');
+            if (manualPause) {
+                hudDetail.textContent = 'Paused';
+            } else {
+                var elapsed = Date.now() - pauseStart;
+                var remaining = Math.max(0, Math.ceil((RESUME_DELAY - elapsed) / 1000));
+                hudDetail.textContent = 'Resuming in ' + remaining + 's\u2026';
+            }
+            return;
+        }
+
+        hudPhase.classList.remove('paused');
+
+        if (phase === 'draw') {
+            hudPhase.textContent = 'DRAWING';
+            var sliceCount = Math.round((frame / DRAW_FRAMES) * U_STEPS);
+            sliceCount = Math.min(sliceCount, U_STEPS);
+            hudDetail.textContent = sliceCount + ' / ' + U_STEPS + ' slices';
+            hudFill.style.width = ((frame / DRAW_FRAMES) * 100).toFixed(1) + '%';
+        } else if (phase === 'orbit') {
+            var degrees = Math.round((frame / ORBIT_FRAMES) * 360);
+            hudPhase.textContent = 'ORBITING';
+            hudFill.style.width = ((frame / ORBIT_FRAMES) * 100).toFixed(1) + '%';
+            hudDetail.textContent = degrees + '\u00B0 / 360\u00B0';
+        } else {
+            hudPhase.textContent = 'COMPLETE';
+            hudFill.style.width = '100%';
+            hudDetail.textContent = 'Adjust sliders or reset to replay';
+        }
+    }
+
+    // --- Camera helpers ---
+    function drawCameraEye(angle, progress) {
+        var z = 2.8 - 0.6 * progress;
+        return {
+            x: ORBIT_RADIUS * Math.cos(angle),
+            y: ORBIT_RADIUS * Math.sin(angle),
+            z: z
+        };
+    }
+
+    function orbitCameraEye(angle) {
+        return {
+            x: ORBIT_RX * Math.cos(angle),
+            y: ORBIT_RY * Math.sin(angle),
+            z: ORBIT_Z_BASE + ORBIT_Z_AMP * Math.sin(angle * 2)
+        };
+    }
+
+    // --- Transition helpers ---
+    function transitionToOrbit() {
+        phase = 'orbit';
+        frame = 0;
+        captionDiv.style.opacity = '0';
+        setTimeout(function () {
+            captionDiv.textContent = 'Drag to look around, or adjust sliders to explore';
+            captionDiv.style.opacity = '1';
+        }, 300);
+    }
+
+    function transitionToDone() {
+        phase = 'done';
+        frame = ORBIT_FRAMES;
+        captionDiv.style.opacity = '0';
+        setTimeout(function () {
+            captionDiv.textContent = 'Adjust sliders to explore, or press reset to replay';
+            captionDiv.style.opacity = '1';
+        }, 300);
+    }
+
+    function resetToStart() {
+        phase = 'draw';
+        frame = 0;
+        orbitAngle = 0;
+        paused = false;
+        manualPause = false;
+        clearTimeout(resumeTimer);
+        btnPause.textContent = '\u23F8';
+
+        // Reset surface to single cross-section
+        var initial = computeSurface(nTwists, halfWidth, 0.01);
+        Plotly.restyle(plotDiv, {
+            x: [initial.x],
+            y: [initial.y],
+            z: [initial.z]
+        }, 0);
+
+        Plotly.relayout(plotDiv, {
+            'scene.camera.eye': drawCameraEye(0, 0)
+        });
+    }
+
+    // --- Main animation loop ---
+    function tick() {
+        updateHUD();
+
+        if (paused) { requestAnimationFrame(tick); return; }
+
+        if (phase === 'draw') {
+            frame++;
+            var progress = Math.min(frame / DRAW_FRAMES, 1.0);
+            var uMax = progress * TWO_PI;
+            if (uMax < 0.01) uMax = 0.01;
+
+            var partial = computeSurface(nTwists, halfWidth, uMax);
+
+            Plotly.restyle(plotDiv, {
+                x: [partial.x],
+                y: [partial.y],
+                z: [partial.z]
+            }, 0);
+
+            orbitAngle += 0.004;
+            Plotly.relayout(plotDiv, {
+                'scene.camera.eye': drawCameraEye(orbitAngle, progress)
+            });
+
+            updateCaption(progress);
+
+            if (frame >= DRAW_FRAMES) {
+                // Ensure full surface is rendered
+                var full = computeSurface(nTwists, halfWidth, TWO_PI);
+                Plotly.restyle(plotDiv, {
+                    x: [full.x],
+                    y: [full.y],
+                    z: [full.z]
+                }, 0);
+                transitionToOrbit();
+            }
+        } else if (phase === 'orbit') {
+            frame++;
+            orbitAngle += (2 * Math.PI) / ORBIT_FRAMES;
+            Plotly.relayout(plotDiv, {
+                'scene.camera.eye': orbitCameraEye(orbitAngle)
+            });
+
+            if (frame >= ORBIT_FRAMES) {
+                transitionToDone();
+            }
+        }
+        // 'done' phase: keep the loop alive for HUD updates
+
+        requestAnimationFrame(tick);
+    }
+
+    // --- Pause on user interaction, resume after idle ---
+    plotDiv.addEventListener('mousedown', interactionPause);
+    plotDiv.addEventListener('touchstart', interactionPause);
+
+    function interactionPause() {
+        if (phase === 'done') return;
+        paused = true;
+        manualPause = false;
+        pauseStart = Date.now();
+        btnPause.textContent = '\u25B6';
+        clearTimeout(resumeTimer);
+        resumeTimer = setTimeout(function () {
+            if (!manualPause) {
+                paused = false;
+                btnPause.textContent = '\u23F8';
+            }
+        }, RESUME_DELAY);
+    }
+
+    // --- Control button handlers ---
+    btnPause.addEventListener('click', function () {
+        if (phase === 'done') return;
+        if (paused) {
+            paused = false;
+            manualPause = false;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u23F8';
+        } else {
+            paused = true;
+            manualPause = true;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u25B6';
+        }
+    });
+
+    btnSkip.addEventListener('click', function () {
+        if (phase === 'done') return;
+
+        if (paused) {
+            paused = false;
+            manualPause = false;
+            clearTimeout(resumeTimer);
+            btnPause.textContent = '\u23F8';
+        }
+
+        if (phase === 'draw') {
+            var full = computeSurface(nTwists, halfWidth, TWO_PI);
+            Plotly.restyle(plotDiv, {
+                x: [full.x],
+                y: [full.y],
+                z: [full.z]
+            }, 0);
+            transitionToOrbit();
+        } else if (phase === 'orbit') {
+            transitionToDone();
+        }
+    });
+
+    btnReset.addEventListener('click', function () {
+        resetToStart();
+    });
+
+    // --- Slider handlers ---
+    function onSliderChange() {
+        nTwists = parseInt(twistSlider.value, 10);
+        halfWidth = parseFloat(widthSlider.value);
+        twistVal.textContent = nTwists;
+        widthVal.textContent = halfWidth.toFixed(2);
+
+        // Recompute the full surface and go to done state
+        var full = computeSurface(nTwists, halfWidth, TWO_PI);
+        Plotly.restyle(plotDiv, {
+            x: [full.x],
+            y: [full.y],
+            z: [full.z]
+        }, 0);
+
+        // Skip to done/interactive state
+        phase = 'done';
+        frame = ORBIT_FRAMES;
+        paused = false;
+        manualPause = false;
+        clearTimeout(resumeTimer);
+        btnPause.textContent = '\u23F8';
+
+        captionDiv.style.opacity = '0';
+        setTimeout(function () {
+            var label = nTwists === 1 ? 'half-twist' : 'half-twists';
+            captionDiv.textContent = nTwists + ' ' + label + ', width ' + halfWidth.toFixed(2) + '. Drag to explore';
+            captionDiv.style.opacity = '1';
+        }, 300);
+
+        updateHUD();
+    }
+
+    twistSlider.addEventListener('input', onSliderChange);
+    widthSlider.addEventListener('input', onSliderChange);
+
+    // Start the animation
+    requestAnimationFrame(tick);
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive Mandelbrot set explorer with click-to-zoom, adjustable iterations, and multiple color schemes - rendered in real time on HTML5 Canvas.">
+<meta name="theme-color" content="#101010">
+<meta property="og:type" content="website">
+<meta property="og:title" content="The Mandelbrot Set - Interactive Fractal Explorer">
+<meta property="og:description" content="Zoom into infinite complexity: explore the Mandelbrot set with real-time rendering, adjustable detail, and multiple color palettes.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌀</text></svg>">
+<title>Mandelbrot Set - Math Visualizations</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<link rel="stylesheet" href="../css/shared.css">
+<style>
+#canvas-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+#viz-canvas {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    background: #101010;
+    cursor: crosshair;
+}
+#hud {
+    position: absolute;
+    bottom: 80px;
+    left: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 10px 16px 10px 14px;
+    min-width: 180px;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+#hud-phase {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+}
+#hud-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+#hud-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.1s linear;
+}
+#hud-detail {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+#hud-coords {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+#controls {
+    position: absolute;
+    bottom: 80px;
+    right: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+}
+#controls button {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+#controls button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #eee;
+}
+#sliders {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+}
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+.slider-group label {
+    min-width: 100px;
+    white-space: nowrap;
+}
+.slider-group label span {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+.slider-group input[type="range"] {
+    width: 120px;
+    accent-color: var(--accent);
+}
+#color-select {
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+#caption {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0 16px;
+    min-height: 40px;
+}
+@media (max-width: 600px) {
+    #viz-canvas { max-width: 100%; }
+    #sliders { gap: 12px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="site-nav">
+    <a href="../index.html" class="nav-home">Math Visualizations</a>
+    <div class="nav-links">
+        <a href="lorenz.html">Lorenz</a>
+        <a href="mobius.html">Mobius</a>
+        <a href="klein.html">Klein</a>
+        <a href="sierpinski.html">Sierpinski</a>
+        <a href="mandelbrot.html" class="active">Mandelbrot</a>
+    </div>
+</nav>
+
+<div class="container">
+<header>
+    <h1>The Mandelbrot Set</h1>
+    <p class="tagline">Infinite complexity from the simplest possible equation: z squared plus c</p>
+</header>
+</div>
+
+<div id="canvas-wrapper">
+    <canvas id="viz-canvas"></canvas>
+    <div id="hud">
+        <div id="hud-phase">RENDERING</div>
+        <div id="hud-progress"><div id="hud-progress-fill"></div></div>
+        <div id="hud-detail"></div>
+        <div id="hud-coords"></div>
+    </div>
+    <div id="controls">
+        <button id="btn-zoom-out" title="Zoom out">−</button>
+        <button id="btn-reset" title="Reset view">↺</button>
+    </div>
+    <div id="sliders">
+        <div class="slider-group">
+            <label>Iterations <span id="iter-val">200</span></label>
+            <input type="range" id="iter-slider" min="50" max="1000" step="50" value="200">
+        </div>
+        <div class="slider-group">
+            <label>Colors</label>
+            <select id="color-select">
+                <option value="inferno" selected>Inferno</option>
+                <option value="gold">Gold</option>
+                <option value="ocean">Ocean</option>
+                <option value="grayscale">Grayscale</option>
+            </select>
+        </div>
+    </div>
+    <div id="caption">Click anywhere to zoom in</div>
+</div>
+
+<div class="container">
+
+<div class="section">
+    <div class="section-label">The Equation</div>
+    <h2>The simplest equation with infinite complexity</h2>
+    <p>
+        The Mandelbrot set comes from iterating one equation over and over:
+    </p>
+    <div class="equation-block">
+        \[z_{n+1} = z_n^2 + c\]
+        <p>
+            Start with z = 0 and pick a complex number c. Square z, add c, and repeat.
+            If the result stays bounded (never flies off to infinity), then c is in the
+            Mandelbrot set. If it escapes, c is outside. That's the entire definition.
+        </p>
+    </div>
+    <p>
+        What makes this remarkable is that such a simple rule produces a shape of literally
+        infinite complexity. No matter how far you zoom in, you find new detail: spirals,
+        tendrils, miniature copies of the whole set, structures that never repeat exactly.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">The Colors</div>
+    <h2>What the colors mean</h2>
+    <p>
+        Points inside the Mandelbrot set are colored black because their iterations never escape.
+        Everything else is colored based on how quickly the iteration escapes. Points
+        near the boundary take many iterations to escape, so they get "hotter" colors.
+        Points far away escape almost immediately.
+    </p>
+    <div class="equation-block">
+        \[\text{escape: } |z_n|^2 > 4\]
+        <p>
+            We check whether the squared magnitude of z exceeds 4. Once it does, we know
+            the sequence will shoot off to infinity. The number of iterations it took to
+            reach this threshold determines the color.
+        </p>
+    </div>
+    <p>
+        The boundary of the Mandelbrot set, the edge between "stays bounded" and
+        "escapes," is where all the visual complexity lives. Zooming into this
+        boundary reveals an endless parade of intricate structures.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">Anatomy</div>
+    <h2>The shapes within the shape</h2>
+    <p>
+        The largest region is the <strong>main cardioid</strong>, the heart-shaped
+        central body. Attached to its left is the <strong>period-2 bulb</strong>, a
+        perfect circle. Smaller bulbs branch off at precise angles, each corresponding
+        to a specific repeating cycle of the iteration.
+    </p>
+    <p>
+        At the tips of the filaments and in the valleys between bulbs, you can find
+        miniature copies of the entire Mandelbrot set. These "mini-brots" appear at
+        every scale, surrounded by their own spiraling decorations. The set is
+        connected, meaning every part of it is joined together, no matter how thin the
+        connecting filaments may appear.
+    </p>
+    <p class="note">
+        The Mandelbrot set lives in the complex plane, where the horizontal axis
+        represents the real part of c and the vertical axis represents the imaginary
+        part. The full set fits within a circle of radius 2 centered at the origin.
+    </p>
+</div>
+
+<footer>
+    <a href="../index.html">Back to portfolio</a>
+    &nbsp;&middot;&nbsp;
+    <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">Back to top</a>
+</footer>
+
+</div>
+
+<script>
+(function () {
+    'use strict';
+
+    // --- Canvas setup with DPI scaling ---
+    var canvas = document.getElementById('viz-canvas');
+    var ctx = canvas.getContext('2d');
+    var dpr = window.devicePixelRatio || 1;
+    var W = 800, H = 600;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(dpr, dpr);
+
+    // --- DOM references ---
+    var hudPhase  = document.getElementById('hud-phase');
+    var hudFill   = document.getElementById('hud-progress-fill');
+    var hudDetail = document.getElementById('hud-detail');
+    var hudCoords = document.getElementById('hud-coords');
+    var caption   = document.getElementById('caption');
+
+    var iterSlider  = document.getElementById('iter-slider');
+    var iterVal     = document.getElementById('iter-val');
+    var colorSelect = document.getElementById('color-select');
+    var btnZoomOut  = document.getElementById('btn-zoom-out');
+    var btnReset    = document.getElementById('btn-reset');
+
+    // --- View state ---
+    var centerX = -0.5;
+    var centerY = 0.0;
+    var zoom = 200;        // pixels per unit in complex plane
+    var maxIter = 200;
+
+    var DEFAULT_CX = -0.5;
+    var DEFAULT_CY = 0.0;
+    var DEFAULT_ZOOM = 200;
+
+    // --- Color palettes ---
+    function infernoColor(t) {
+        // Simplified inferno: dark purple -> red -> orange -> yellow -> white
+        var r, g, b;
+        if (t < 0.25) {
+            var s = t / 0.25;
+            r = Math.floor(10 + 68 * s);
+            g = Math.floor(7 + 5 * s);
+            b = Math.floor(46 + 72 * s);
+        } else if (t < 0.5) {
+            var s = (t - 0.25) / 0.25;
+            r = Math.floor(78 + 90 * s);
+            g = Math.floor(12 + 46 * s);
+            b = Math.floor(118 - 35 * s);
+        } else if (t < 0.75) {
+            var s = (t - 0.5) / 0.25;
+            r = Math.floor(168 + 58 * s);
+            g = Math.floor(58 + 74 * s);
+            b = Math.floor(83 - 69 * s);
+        } else {
+            var s = (t - 0.75) / 0.25;
+            r = Math.floor(226 + 26 * s);
+            g = Math.floor(132 + 122 * s);
+            b = Math.floor(14 + 238 * s);
+        }
+        return [r, g, b];
+    }
+
+    function goldColor(t) {
+        var r = Math.floor(30 + 170 * t);
+        var g = Math.floor(10 + 152 * t);
+        var b = Math.floor(5 + 101 * t);
+        return [r, g, b];
+    }
+
+    function oceanColor(t) {
+        var r = Math.floor(5 + 40 * t);
+        var g = Math.floor(20 + 130 * t);
+        var b = Math.floor(60 + 195 * t);
+        return [r, g, b];
+    }
+
+    function grayscaleColor(t) {
+        var v = Math.floor(255 * t);
+        return [v, v, v];
+    }
+
+    var palettes = {
+        inferno: infernoColor,
+        gold: goldColor,
+        ocean: oceanColor,
+        grayscale: grayscaleColor
+    };
+
+    var currentPalette = 'inferno';
+
+    // --- Rendering ---
+    var rendering = false;
+    var renderRow = 0;
+    var imageData = null;
+
+    function startRender() {
+        rendering = true;
+        renderRow = 0;
+        imageData = ctx.createImageData(W * dpr, H * dpr);
+        hudPhase.textContent = 'RENDERING';
+        hudFill.style.width = '0%';
+        requestAnimationFrame(renderBatch);
+    }
+
+    function renderBatch() {
+        if (!rendering) return;
+
+        var colorFn = palettes[currentPalette];
+        var data = imageData.data;
+        var batchSize = Math.ceil(H * dpr / 20); // render in ~20 batches
+        var endRow = Math.min(renderRow + batchSize, H * dpr);
+
+        for (var py = renderRow; py < endRow; py++) {
+            for (var px = 0; px < W * dpr; px++) {
+                // Map pixel to complex plane
+                var x0 = centerX + (px / dpr - W / 2) / zoom;
+                var y0 = centerY + (py / dpr - H / 2) / zoom;
+
+                var x = 0, y = 0;
+                var iter = 0;
+                var xx = 0, yy = 0;
+
+                while (xx + yy <= 4 && iter < maxIter) {
+                    y = 2 * x * y + y0;
+                    x = xx - yy + x0;
+                    xx = x * x;
+                    yy = y * y;
+                    iter++;
+                }
+
+                var idx = (py * W * dpr + px) * 4;
+                if (iter === maxIter) {
+                    data[idx] = 0;
+                    data[idx + 1] = 0;
+                    data[idx + 2] = 0;
+                } else {
+                    // Smooth coloring
+                    var log2 = Math.log(2);
+                    var nu = Math.log(Math.log(Math.sqrt(xx + yy)) / log2) / log2;
+                    var smoothIter = iter + 1 - nu;
+                    var t = smoothIter / maxIter;
+                    t = Math.max(0, Math.min(1, t));
+                    // Cycle the palette for more visual detail
+                    t = (t * 8) % 1;
+                    var color = colorFn(t);
+                    data[idx] = color[0];
+                    data[idx + 1] = color[1];
+                    data[idx + 2] = color[2];
+                }
+                data[idx + 3] = 255;
+            }
+        }
+
+        renderRow = endRow;
+        var progress = renderRow / (H * dpr);
+        hudFill.style.width = (progress * 100).toFixed(1) + '%';
+        hudDetail.textContent = Math.round(progress * 100) + '% rendered';
+
+        if (renderRow >= H * dpr) {
+            // Done
+            ctx.putImageData(imageData, 0, 0);
+            rendering = false;
+            hudPhase.textContent = 'COMPLETE';
+            hudFill.style.width = '100%';
+            hudDetail.textContent = maxIter + ' max iterations';
+            updateCoordsHUD();
+        } else {
+            // Put partial result for visual feedback
+            ctx.putImageData(imageData, 0, 0);
+            requestAnimationFrame(renderBatch);
+        }
+    }
+
+    function updateCoordsHUD() {
+        var reRange = (W / zoom).toFixed(4);
+        hudCoords.textContent = 'Re: ' + centerX.toFixed(6) + '  Im: ' + centerY.toFixed(6) + '  Zoom: ' + zoom.toFixed(0) + 'x';
+    }
+
+    // --- Click to zoom ---
+    canvas.addEventListener('click', function (e) {
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = W / rect.width;
+        var scaleY = H / rect.height;
+        var px = (e.clientX - rect.left) * scaleX;
+        var py = (e.clientY - rect.top) * scaleY;
+
+        // Map pixel to complex plane
+        centerX = centerX + (px - W / 2) / zoom;
+        centerY = centerY + (py - H / 2) / zoom;
+        zoom *= 2;
+
+        startRender();
+    });
+
+    // Right-click to zoom out
+    canvas.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        zoom = Math.max(50, zoom / 2);
+        startRender();
+    });
+
+    // --- Mouse move: show coordinates ---
+    canvas.addEventListener('mousemove', function (e) {
+        if (rendering) return;
+        var rect = canvas.getBoundingClientRect();
+        var scaleX = W / rect.width;
+        var scaleY = H / rect.height;
+        var px = (e.clientX - rect.left) * scaleX;
+        var py = (e.clientY - rect.top) * scaleY;
+
+        var re = centerX + (px - W / 2) / zoom;
+        var im = centerY + (py - H / 2) / zoom;
+        hudCoords.textContent = 'Re: ' + re.toFixed(6) + '  Im: ' + im.toFixed(6) + '  Zoom: ' + zoom.toFixed(0) + 'x';
+    });
+
+    // --- Control handlers ---
+    btnZoomOut.addEventListener('click', function () {
+        zoom = Math.max(50, zoom / 2);
+        startRender();
+    });
+
+    btnReset.addEventListener('click', function () {
+        centerX = DEFAULT_CX;
+        centerY = DEFAULT_CY;
+        zoom = DEFAULT_ZOOM;
+        startRender();
+    });
+
+    iterSlider.addEventListener('input', function () {
+        maxIter = parseInt(this.value);
+        iterVal.textContent = maxIter;
+        startRender();
+    });
+
+    colorSelect.addEventListener('change', function () {
+        currentPalette = this.value;
+        startRender();
+    });
+
+    // --- Initial render ---
+    startRender();
+
+})();
+</script>
+
+</body>
+</html>
