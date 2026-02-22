@@ -14,6 +14,7 @@
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
 <!-- MathJax 3 — renders LaTeX equations -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <link rel="stylesheet" href="css/shared.css">
 <style>
 .landing-header {
@@ -94,6 +95,64 @@
     font-size: 0.8rem;
     color: var(--text-dim);
 }
+.landing-footer .credit {
+    margin-bottom: 28px;
+    color: #666;
+    font-size: 0.75rem;
+}
+.feedback-form {
+    max-width: 420px;
+    margin: 0 auto;
+    text-align: left;
+}
+.feedback-form label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+}
+.feedback-form select,
+.feedback-form textarea {
+    width: 100%;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    resize: vertical;
+}
+.feedback-form select:focus,
+.feedback-form textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+.feedback-form textarea {
+    min-height: 72px;
+}
+.feedback-form button {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+.feedback-form button:hover { opacity: 0.85; }
+.feedback-form button:disabled { opacity: 0.5; cursor: default; }
+.feedback-msg {
+    font-size: 0.8rem;
+    margin-top: 8px;
+    min-height: 1.2em;
+}
+.feedback-msg.success { color: #6abf7b; }
+.feedback-msg.error { color: #d9534f; }
 @media (max-width: 600px) {
     .landing-header { padding: 48px 0 36px; }
     .landing-header h1 { font-size: 1.8rem; }
@@ -179,7 +238,19 @@
 </div>
 
 <div class="landing-footer">
-    Built with vanilla HTML, CSS, and JavaScript
+    <p class="credit">Made by Pk Lauvstad</p>
+    <form class="feedback-form" id="feedback-form">
+        <label for="feedback-category">Category</label>
+        <select id="feedback-category">
+            <option value="general">General feedback</option>
+            <option value="feature">Feature request</option>
+            <option value="bug">Bug report</option>
+        </select>
+        <label for="feedback-message">Message</label>
+        <textarea id="feedback-message" placeholder="Suggestions, ideas, or anything else..." required></textarea>
+        <button type="submit">Send feedback</button>
+        <div class="feedback-msg" id="feedback-msg"></div>
+    </form>
 </div>
 
 </div><!-- end panel-home -->
@@ -1107,6 +1178,47 @@
     } else {
         scheduleIdle(drawAll);
     }
+})();
+</script>
+
+<!-- Supabase feedback form handler -->
+<script>
+(function () {
+    'use strict';
+    var SUPABASE_URL = 'https://fdtsktbzshndnwiububp.supabase.co';
+    var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkdHNrdGJ6c2huZG53aXVidWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzYwNDIsImV4cCI6MjA4NzMxMjA0Mn0.p1QU_Krf76umAu92xZDfnYHmnXIOqCpn7k3s_EgbpP4';
+
+    var form = document.getElementById('feedback-form');
+    if (!form || typeof supabase === 'undefined') return;
+
+    var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var msg = document.getElementById('feedback-msg');
+        var btn = form.querySelector('button');
+        var message = document.getElementById('feedback-message').value.trim();
+        if (!message) return;
+
+        btn.disabled = true;
+        msg.textContent = '';
+        msg.className = 'feedback-msg';
+
+        var { error } = await sb.from('feedback').insert({
+            message: message,
+            category: document.getElementById('feedback-category').value
+        });
+
+        if (error) {
+            msg.textContent = 'Something went wrong. Try again later.';
+            msg.className = 'feedback-msg error';
+        } else {
+            msg.textContent = 'Thanks for your feedback!';
+            msg.className = 'feedback-msg success';
+            form.reset();
+        }
+        btn.disabled = false;
+    });
 })();
 </script>
 
