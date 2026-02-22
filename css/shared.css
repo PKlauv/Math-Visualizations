@@ -225,6 +225,215 @@ footer a {
 }
 footer a:hover { border-bottom-color: var(--accent); }
 
+/* =================================================================
+   Tab panels — SPA tab switching with fade transitions
+   ================================================================= */
+.tab-panel {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.tab-panel.active {
+    display: block;
+}
+.tab-panel.visible {
+    opacity: 1;
+}
+
+/* =================================================================
+   Consolidated visualization styles — shared across all viz panels.
+   Extracted from per-page inline <style> blocks.
+   ================================================================= */
+
+/* Plot / canvas wrappers — full-width container for the visualization */
+.plot-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+}
+.canvas-wrapper {
+    position: relative;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 12px 16px 0;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+}
+
+/* Plotly plot container */
+.viz-plot {
+    width: 100%;
+    height: 560px;
+}
+
+/* Canvas element */
+.viz-canvas {
+    max-width: 100%;
+    height: 560px;
+    display: block;
+    margin: 0 auto;
+    background: #101010;
+}
+.viz-canvas.crosshair {
+    cursor: crosshair;
+}
+
+/* Status HUD overlay — glassmorphic panel */
+.viz-hud {
+    position: absolute;
+    bottom: 52px;
+    left: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 10px 16px 10px 14px;
+    min-width: 150px;
+    z-index: 10;
+    pointer-events: none;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.viz-hud-phase {
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 6px;
+    transition: color 0.3s;
+}
+.viz-hud-phase.paused {
+    color: #d4915e;
+}
+.viz-hud-progress {
+    width: 100%;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.viz-hud-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.15s linear;
+}
+.viz-hud-detail {
+    font-family: var(--font-ui);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+.viz-hud-coords {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+}
+
+/* Animation control buttons — glassmorphic button group */
+.viz-controls {
+    position: absolute;
+    bottom: 52px;
+    right: 24px;
+    background: rgba(16, 16, 16, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 6px;
+    padding: 6px 8px;
+    z-index: 10;
+    pointer-events: auto;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    gap: 4px;
+}
+.viz-controls button {
+    background: transparent;
+    border: none;
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    padding: 4px 8px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1;
+}
+.viz-controls button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #eee;
+}
+
+/* Educational caption below visualization */
+.viz-caption {
+    text-align: center;
+    font-family: var(--font-ui);
+    font-size: 0.9rem;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0 16px;
+    min-height: 40px;
+    transition: opacity 0.6s;
+}
+
+/* Slider controls — row of parameter adjusters */
+.viz-sliders {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+}
+.slider-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    color: var(--text-dim);
+}
+.slider-group label {
+    min-width: 100px;
+    white-space: nowrap;
+}
+.slider-group label span {
+    font-family: var(--font-mono);
+    color: var(--accent);
+}
+.slider-group input[type="range"] {
+    width: 120px;
+    accent-color: var(--accent);
+}
+
+/* Dark-themed select dropdown */
+.viz-select {
+    background: var(--bg-surface);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.viz-select:focus {
+    outline: 1px solid var(--accent);
+    outline-offset: 1px;
+}
+
+/* Position variants for HUD/controls placement */
+.viz-hud.hud-low { bottom: 12px; }
+.viz-controls.controls-low { bottom: 12px; }
+.viz-hud.hud-above-sliders { bottom: 112px; }
+.viz-controls.controls-above-sliders { bottom: 112px; }
+.viz-hud.hud-above-caption { bottom: 80px; }
+.viz-controls.controls-above-caption { bottom: 80px; }
+
 /* Responsive — tighter spacing on narrow screens */
 @media (max-width: 600px) {
     header { padding: 52px 0 36px; }
@@ -238,14 +447,26 @@ footer a:hover { border-bottom-color: var(--accent); }
     }
     .nav-links {
         gap: 14px;
-        flex-wrap: wrap;
-        justify-content: center;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
+    .nav-links::-webkit-scrollbar { display: none; }
 
     .equation-block {
         padding: 16px 12px;
     }
     .equation-block mjx-container {
         font-size: 0.85rem;
+    }
+
+    .viz-plot { height: 360px; }
+    .viz-canvas { height: 360px; }
+    .viz-sliders {
+        flex-direction: column;
+        gap: 10px;
+        align-items: center;
     }
 }

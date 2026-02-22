@@ -3,13 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Interactive visualizations of beautiful mathematical objects - Lorenz attractor, Möbius strip, Klein bottle, Sierpinski triangle, and Mandelbrot set.">
+<meta name="description" content="Interactive visualizations of beautiful mathematical objects - Lorenz attractor, Mobius strip, Klein bottle, Sierpinski triangle, and Mandelbrot set.">
 <meta name="theme-color" content="#101010">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Math Visualizations - Interactive Mathematical Art">
 <meta property="og:description" content="Explore chaos theory, topology, and fractals through interactive browser-based visualizations.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>∞</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#8734;</text></svg>">
 <title>Math Visualizations</title>
+<!-- Plotly.js — interactive 3D plotting and animation -->
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<!-- MathJax 3 — renders LaTeX equations -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
 <link rel="stylesheet" href="css/shared.css">
 <style>
 .landing-header {
@@ -49,6 +53,7 @@
     color: inherit;
     transition: border-color 0.25s, transform 0.25s;
     display: block;
+    cursor: pointer;
 }
 .viz-card:hover {
     border-color: var(--accent);
@@ -101,6 +106,24 @@
 </head>
 <body>
 
+<nav class="site-nav">
+    <a href="#home" class="nav-home" data-tab="home">Math Visualizations</a>
+    <div class="nav-links">
+        <a href="#lorenz" data-tab="lorenz">Lorenz</a>
+        <a href="#mobius" data-tab="mobius">Mobius</a>
+        <a href="#klein" data-tab="klein">Klein</a>
+        <a href="#sierpinski" data-tab="sierpinski">Sierpinski</a>
+        <a href="#mandelbrot" data-tab="mandelbrot">Mandelbrot</a>
+    </div>
+</nav>
+
+<main id="tab-container">
+
+<!-- ============================================================
+     HOME PANEL — Card grid landing page
+     ============================================================ -->
+<div class="tab-panel" id="panel-home">
+
 <div class="container">
 <div class="landing-header">
     <h1>Math Visualizations</h1>
@@ -109,69 +132,741 @@
 </div>
 
 <div class="viz-grid">
-
-    <a href="visualizations/lorenz.html" class="viz-card">
+    <div class="viz-card" data-tab="lorenz">
         <canvas class="viz-thumb" id="thumb-lorenz"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Chaos Theory</span>
             <h3>Lorenz Attractor</h3>
             <p>The butterfly of chaos. A 3D shape born from weather equations where tiny differences lead to wildly different outcomes</p>
         </div>
-    </a>
+    </div>
 
-    <a href="visualizations/mobius.html" class="viz-card">
+    <div class="viz-card" data-tab="mobius">
         <canvas class="viz-thumb" id="thumb-mobius"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Topology</span>
             <h3>Mobius Strip</h3>
             <p>A surface with only one side and one edge. Twist a strip and connect the ends</p>
         </div>
-    </a>
+    </div>
 
-    <a href="visualizations/klein.html" class="viz-card">
+    <div class="viz-card" data-tab="klein">
         <canvas class="viz-thumb" id="thumb-klein"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Topology</span>
             <h3>Klein Bottle</h3>
             <p>A closed surface with no inside or outside. It can only truly exist in four dimensions</p>
         </div>
-    </a>
+    </div>
 
-    <a href="visualizations/sierpinski.html" class="viz-card">
+    <div class="viz-card" data-tab="sierpinski">
         <canvas class="viz-thumb" id="thumb-sierpinski"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Fractal</span>
             <h3>Sierpinski Triangle</h3>
             <p>Infinite self-similarity from a simple rule: remove the middle, repeat forever</p>
         </div>
-    </a>
+    </div>
 
-    <a href="visualizations/mandelbrot.html" class="viz-card">
+    <div class="viz-card" data-tab="mandelbrot">
         <canvas class="viz-thumb" id="thumb-mandelbrot"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Fractal</span>
             <h3>Mandelbrot Set</h3>
             <p>Infinite complexity from the simplest equation: z squared plus c, iterated forever</p>
         </div>
-    </a>
-
+    </div>
 </div>
 
 <div class="landing-footer">
     Built with vanilla HTML, CSS, and JavaScript
 </div>
 
-<script>
-// =====================================================================
-// Thumbnail renderers — small programmatic previews for each card.
-// No image files needed; each canvas draws a simplified version.
-// =====================================================================
+</div><!-- end panel-home -->
 
+
+<!-- ============================================================
+     LORENZ PANEL
+     ============================================================ -->
+<div class="tab-panel" id="panel-lorenz">
+
+<div class="container">
+<header>
+    <h1>The Lorenz Attractor</h1>
+    <p class="tagline">A 3D shape born from weather equations, where tiny differences lead to wildly different outcomes</p>
+</header>
+</div>
+
+<div class="plot-wrapper" id="lorenz-plot-wrapper">
+    <div class="viz-plot" id="lorenz-plot"></div>
+    <div class="viz-hud" id="lorenz-hud">
+        <div class="viz-hud-phase" id="lorenz-hud-phase"></div>
+        <div class="viz-hud-progress"><div class="viz-hud-progress-fill" id="lorenz-hud-progress-fill"></div></div>
+        <div class="viz-hud-detail" id="lorenz-hud-detail"></div>
+    </div>
+    <div class="viz-controls" id="lorenz-controls">
+        <button id="lorenz-btn-pause" title="Pause / Play">&#x23F8;</button>
+        <button id="lorenz-btn-skip" title="Skip phase">&#x23ED;</button>
+        <button id="lorenz-btn-reset" title="Reset">&#x21BA;</button>
+    </div>
+    <div class="viz-caption" id="lorenz-caption"></div>
+</div>
+
+<div class="container">
+
+<div class="section">
+    <div class="section-label">Background</div>
+    <h2>How a rounding error changed science</h2>
+    <p>
+        In 1963, an MIT meteorologist named Edward Lorenz was running a computer simulation
+        of atmospheric convection. He wanted to re-examine a particular run, so he restarted
+        the simulation from the middle. But instead of typing the full value
+        <strong>0.506127</strong>, he rounded it to <strong>0.506</strong>.
+    </p>
+    <p>
+        That difference was less than 0.02%. It should not have mattered. But over time,
+        the two simulations diverged completely. They started out nearly identical and ended
+        up producing totally different weather patterns.
+    </p>
+    <p>
+        Lorenz had stumbled onto something fundamental: in certain systems, tiny differences
+        in initial conditions get amplified over time until the outcomes are unrecognizable.
+        This idea eventually became known as the "butterfly effect," and the mathematical
+        structure behind it is called the <strong>Lorenz attractor</strong>.
+    </p>
+    <p>
+        What makes this so strange is that there is no randomness involved. The equations
+        are entirely deterministic. If you plug in the exact same numbers, you get the exact
+        same result every time. The problem is that you can never measure the real world
+        with perfect precision. And in a chaotic system, "close enough" is never close enough.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Three coupled differential equations</h2>
+    <p>
+        The Lorenz system is built on three variables (x, y, and z) that represent
+        a simplified model of atmospheric convection. Each equation describes how one
+        variable changes over time, depending on the current values of all three.
+    </p>
+
+    <div class="equation-block">
+        \[\frac{dx}{dt} = \sigma\,(y - x)\]
+        <p>
+            The rate of change of x is proportional to the difference between y and x.
+            When y is larger, x grows. When y is smaller, x shrinks. The parameter
+            sigma controls how quickly x responds.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[\frac{dy}{dt} = x\,(\rho - z) - y\]
+        <p>
+            This equation has a nonlinear term: x multiplied by (rho minus z). When z
+            is small, this term drives y upward. When z is large, it suppresses y. The
+            minus y at the end acts as a damping force that pulls y back toward zero.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[\frac{dz}{dt} = x\,y - \beta\,z\]
+        <p>
+            The product of x and y pushes z upward, while beta times z pulls it back down.
+            This competition between the two terms is what produces the attractor's
+            characteristic double-lobed shape.
+        </p>
+    </div>
+
+    <p class="note">
+        The nonlinear terms (x times z in the second equation, x times y in the third)
+        are what make this system chaotic. Without them, the behavior would be straightforward.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">Parameters</div>
+    <h2>The standard values</h2>
+    <p>
+        Lorenz chose these values to model convection rolls in the atmosphere.
+        They have since become the standard test case for studying chaotic behavior.
+        The attractor only appears for certain ranges of these parameters, and
+        the classic values sit right in the heart of the chaotic regime.
+    </p>
+
+    <table class="param-table">
+        <thead>
+            <tr><th>Symbol</th><th>Value</th><th>Meaning</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="symbol">&sigma;</td>
+                <td class="value">10</td>
+                <td>Prandtl number. Controls how quickly heat spreads compared to how quickly the fluid flows.</td>
+            </tr>
+            <tr>
+                <td class="symbol">&rho;</td>
+                <td class="value">28</td>
+                <td>Rayleigh number. Measures how big the temperature difference is between the top and bottom of the fluid.</td>
+            </tr>
+            <tr>
+                <td class="symbol">&beta;</td>
+                <td class="value">8/3</td>
+                <td>Geometric factor. Related to the aspect ratio of the convection cell.</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="section">
+    <div class="section-label">Applications</div>
+    <h2>Where this shows up in practice</h2>
+    <p>
+        Chaos theory started with weather, but the same math turns up across a wide
+        range of fields. Anywhere you find systems where outputs feed back into inputs,
+        you're likely to find chaotic behavior.
+    </p>
+
+    <ul class="app-list">
+        <li>
+            <span class="app-title">Weather and climate modeling.</span>
+            This is where Lorenz's work began. Chaotic sensitivity is the reason
+            weather forecasts lose accuracy after about 10 days, no matter how much
+            data you collect.
+        </li>
+        <li>
+            <span class="app-title">Fluid dynamics.</span>
+            Turbulent flow in pipes, around aircraft, and through the ocean follows
+            chaotic patterns. Understanding those patterns is a major part of modern
+            engineering.
+        </li>
+        <li>
+            <span class="app-title">Cardiology.</span>
+            A healthy heart rhythm actually has a small amount of chaotic variability.
+            When that variability disappears, it can be a warning sign of cardiac disease.
+        </li>
+        <li>
+            <span class="app-title">Cryptography.</span>
+            Chaotic systems produce outputs that look random but are fully deterministic.
+            That property makes them useful for generating encryption keys and secure
+            pseudo-random sequences.
+        </li>
+    </ul>
+</div>
+
+<footer>
+    <a href="#home" data-tab="home">Back to portfolio</a>
+</footer>
+
+</div>
+</div><!-- end panel-lorenz -->
+
+
+<!-- ============================================================
+     MOBIUS PANEL
+     ============================================================ -->
+<div class="tab-panel" id="panel-mobius">
+
+<div class="container">
+<header>
+    <h1>The M&ouml;bius Strip</h1>
+    <p class="tagline">A surface with only one side and one edge. A fundamental object in topology</p>
+</header>
+</div>
+
+<div class="plot-wrapper" id="mobius-plot-wrapper">
+    <div class="viz-plot" id="mobius-plot"></div>
+    <div class="viz-hud hud-above-sliders" id="mobius-hud">
+        <div class="viz-hud-phase" id="mobius-hud-phase"></div>
+        <div class="viz-hud-progress"><div class="viz-hud-progress-fill" id="mobius-hud-progress-fill"></div></div>
+        <div class="viz-hud-detail" id="mobius-hud-detail"></div>
+    </div>
+    <div class="viz-controls controls-above-sliders" id="mobius-controls">
+        <button id="mobius-btn-pause" title="Pause / Play">&#x23F8;</button>
+        <button id="mobius-btn-skip" title="Skip phase">&#x23ED;</button>
+        <button id="mobius-btn-reset" title="Reset">&#x21BA;</button>
+    </div>
+    <div class="viz-sliders" id="mobius-sliders">
+        <div class="slider-group">
+            <label>Half-twists <span id="mobius-twist-val">1</span></label>
+            <input type="range" id="mobius-twist-slider" min="1" max="5" step="1" value="1">
+        </div>
+        <div class="slider-group">
+            <label>Width <span id="mobius-width-val">0.40</span></label>
+            <input type="range" id="mobius-width-slider" min="0.1" max="0.8" step="0.05" value="0.4">
+        </div>
+    </div>
+    <div class="viz-caption" id="mobius-caption"></div>
+</div>
+
+<div class="container">
+
+<div class="section">
+    <div class="section-label">Topology</div>
+    <h2>A surface with only one side</h2>
+    <p>
+        Imagine an ant walking along the surface of a M&ouml;bius strip. Without ever
+        crossing an edge, the ant can reach every point on what appears to be "both sides"
+        of the strip. That is because there is only one side. If you take a pen and draw
+        a line down the center, you will trace a path that covers the entire surface before
+        returning to its starting point.
+    </p>
+    <p>
+        The same is true of the boundary. An ordinary paper loop has two edges: an
+        inner edge and an outer edge. The M&ouml;bius strip has only one. You can verify
+        this by running your finger along the edge: you will travel the full length of the
+        boundary without lifting your finger, arriving back where you started.
+    </p>
+    <p>
+        This means there's no way to label one side "top" and the other "bottom" across
+        the whole thing. Any attempt to paint one side red and the other blue will fail.
+        The two colors inevitably run into each other.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Parametric construction</h2>
+    <p>
+        The M&ouml;bius strip can be described by three parametric equations that map two
+        parameters, u and v, to a point in 3D space. The parameter u sweeps around the
+        loop from 0 to 2&pi;, while v sweeps across the width of the strip.
+    </p>
+
+    <div class="equation-block">
+        \[ x(u,v) = \bigl(1 + v\cos\tfrac{u}{2}\bigr)\cos u \]
+        <p>
+            The x-coordinate combines the circular sweep (cos u) with a width modulation
+            that depends on half the angle (cos u/2). This half-angle term is what creates
+            the twist.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[ y(u,v) = \bigl(1 + v\cos\tfrac{u}{2}\bigr)\sin u \]
+        <p>
+            The y-coordinate works the same way as x, but with sin u instead of cos u.
+            Together, x and y trace a circle in the horizontal plane, modulated by the
+            strip width.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[ z(u,v) = v\sin\tfrac{u}{2} \]
+        <p>
+            The z-coordinate lifts the strip out of the plane. The sin(u/2) term starts
+            at zero, rises to 1 at u = &pi;, and returns to zero at u = 2&pi;. But because
+            it uses u/2 instead of u, the strip makes only a half-twist before closing,
+            which is exactly what produces the one-sided topology.
+        </p>
+    </div>
+
+    <p class="note">
+        The key insight is the u/2 factor. A full loop around the strip (u goes from 0 to
+        2&pi;) produces only a half-rotation (u/2 goes from 0 to &pi;) of the cross-section.
+        This half-twist is what connects the "top" to the "bottom," creating a single
+        continuous surface.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">Connections</div>
+    <h2>From M&ouml;bius to Klein</h2>
+    <p>
+        If you take two M&ouml;bius strips and glue them together along their single edges,
+        the result is a Klein bottle, a closed surface with no inside or outside. The
+        Klein bottle cannot exist in three-dimensional space without intersecting itself, but
+        it lives naturally in four dimensions. The M&ouml;bius strip, then, is the simplest
+        building block of non-orientable geometry.
+    </p>
+    <p>
+        The M&ouml;bius strip also shows up in surprisingly practical places. Conveyor belts
+        are sometimes given a half-twist so that the belt wears evenly on "both sides."
+        Since there is really only one side, every part of the belt surface contacts the
+        rollers equally. The same principle has been applied to continuous-loop recording
+        tapes and printer ribbons.
+    </p>
+    <p>
+        In mathematics, the M&ouml;bius strip is a key example in the study of shapes and
+        surfaces. It demonstrates that not all surfaces are orientable, and it plays a role
+        in understanding how different surfaces relate to each other.
+    </p>
+</div>
+
+<footer>
+    <a href="#home" data-tab="home">Back to portfolio</a>
+</footer>
+
+</div>
+</div><!-- end panel-mobius -->
+
+
+<!-- ============================================================
+     KLEIN PANEL
+     ============================================================ -->
+<div class="tab-panel" id="panel-klein">
+
+<div class="container">
+<header>
+    <h1>The Klein Bottle</h1>
+    <p class="tagline">A closed surface with no inside and no outside. It can only truly exist in four dimensions</p>
+</header>
+</div>
+
+<div class="plot-wrapper" id="klein-plot-wrapper">
+    <div class="viz-plot" id="klein-plot"></div>
+    <div class="viz-hud" id="klein-hud">
+        <div class="viz-hud-phase" id="klein-hud-phase"></div>
+        <div class="viz-hud-detail" id="klein-hud-detail"></div>
+    </div>
+    <div class="viz-controls" id="klein-controls">
+        <button id="klein-btn-pause" title="Pause / Play">&#x23F8;</button>
+        <button id="klein-btn-reset" title="Reset camera">&#x21BA;</button>
+    </div>
+    <div class="viz-caption" id="klein-caption"></div>
+    <div class="viz-sliders" id="klein-sliders">
+        <div class="slider-group">
+            <label>Opacity <span id="klein-opacity-val">1.00</span></label>
+            <input type="range" id="klein-opacity-slider" min="0.3" max="1.0" step="0.05" value="1.00">
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+<div class="section">
+    <div class="section-label">Topology</div>
+    <h2>A surface with no inside</h2>
+    <p>
+        The Klein bottle is a closed surface, like a sphere, it has no edges. But unlike
+        a sphere, it has no inside or outside. If you tried to paint the "outside" of a
+        Klein bottle, you'd end up painting the "inside" too, because they're the same
+        surface.
+    </p>
+    <p>
+        In three dimensions, the surface has to pass through itself to close up. This
+        self-intersection is an artifact of being stuck in 3D. In four dimensions, the
+        Klein bottle closes up cleanly without any intersection, the same way a
+        figure-eight on paper seems to cross itself but a circle in 3D doesn't.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Classic bottle immersion</h2>
+    <p>
+        The classic Klein bottle is defined by a set of equations that work differently
+        for each half. The parameter u sweeps from 0 to 2&pi; while v sweeps from 0 to
+        2&pi;. The tube radius r = 4(1 &minus; cos(u)/2) varies so the neck narrows as it
+        curves back through the body.
+    </p>
+
+    <div class="equation-block">
+        \[ \text{For } u < \pi: \quad x = 6\cos u\,(1+\sin u) + r\cos u\cos v, \quad y = 16\sin u + r\sin u\cos v \]
+        <p>
+            When u is in the first half, the tube shape attaches to the body surface,
+            creating the bulging bottle shape. The 6cos(u)(1 + sin(u)) term traces the overall
+            profile while the r&middot;cos(v) terms add the circular tube cross-section.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[ \text{For } u \geq \pi: \quad x = 6\cos u\,(1+\sin u) - r\cos v, \quad y = 16\sin u \]
+        <p>
+            In the second half, the tube detaches from the body axis and passes through the
+            surface. The x-equation subtracts r&middot;cos(v) independently of sin(u), forming
+            the characteristic neck that dips back inside the bottle.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[ z(u,v) = r\sin v, \quad r = 4\!\left(1 - \tfrac{\cos u}{2}\right) \]
+        <p>
+            The z-coordinate is the same for both halves. It simply lifts the tube
+            shape out of the xy-plane. The varying radius r is what gives the bottle
+            its recognizable shape: wide at the base, narrow at the neck.
+        </p>
+    </div>
+
+    <p class="note">
+        The self-intersection where the neck passes through the body is unavoidable in 3D.
+        In four dimensions, the Klein bottle closes seamlessly without any crossing.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">Connections</div>
+    <h2>Two Mobius strips</h2>
+    <p>
+        If you cut a Klein bottle in half along a certain curve, you get two Mobius strips.
+        This connection goes both ways: gluing two Mobius strips edge-to-edge produces a
+        Klein bottle. The one-sidedness of the Mobius strip is inherited by the Klein
+        bottle. Both surfaces have only one side.
+    </p>
+    <p>
+        Mathematicians use a number called the Euler characteristic to tell surfaces apart.
+        The Klein bottle scores 0, making it fundamentally different from the sphere (which
+        scores 2). The torus also scores 0, but the torus is orientable and has a well-defined
+        inside and outside. The Klein bottle is the simplest closed surface that is both
+        one-sided and has no boundary.
+    </p>
+</div>
+
+<footer>
+    <a href="#home" data-tab="home">Back to portfolio</a>
+</footer>
+
+</div>
+</div><!-- end panel-klein -->
+
+
+<!-- ============================================================
+     SIERPINSKI PANEL
+     ============================================================ -->
+<div class="tab-panel" id="panel-sierpinski">
+
+<div class="container">
+<header>
+    <h1>The Sierpinski Triangle</h1>
+    <p class="tagline">A fractal that looks the same no matter how far you zoom in, more than a line, less than a plane</p>
+</header>
+</div>
+
+<div class="canvas-wrapper" id="sierpinski-canvas-wrapper">
+    <canvas class="viz-canvas" id="sierpinski-canvas"></canvas>
+    <div class="viz-hud hud-low" id="sierpinski-hud">
+        <div class="viz-hud-phase" id="sierpinski-hud-phase"></div>
+        <div class="viz-hud-progress"><div class="viz-hud-progress-fill" id="sierpinski-hud-progress-fill"></div></div>
+        <div class="viz-hud-detail" id="sierpinski-hud-detail"></div>
+    </div>
+    <div class="viz-controls controls-low" id="sierpinski-controls">
+        <button id="sierpinski-btn-pause" title="Pause / Play">&#x23F8;</button>
+        <button id="sierpinski-btn-skip" title="Skip to end">&#x23ED;</button>
+        <button id="sierpinski-btn-reset" title="Reset">&#x21BA;</button>
+    </div>
+</div>
+<div class="viz-sliders" style="max-width:960px;margin:0 auto;">
+    <div class="slider-group">
+        <label>Depth <span id="sierpinski-depth-val">7</span></label>
+        <input type="range" id="sierpinski-depth-slider" min="0" max="9" step="1" value="7">
+    </div>
+    <div class="slider-group">
+        <label>Method</label>
+        <select class="viz-select" id="sierpinski-method-select">
+            <option value="recursive" selected>Recursive</option>
+            <option value="chaos">Chaos Game</option>
+        </select>
+    </div>
+</div>
+<div class="viz-caption" id="sierpinski-caption" style="max-width:960px;margin:0 auto;"></div>
+
+<div class="container">
+
+<div class="section">
+    <div class="section-label">Fractals</div>
+    <h2>Self-similarity at every scale</h2>
+    <p>
+        The Sierpinski triangle looks the same no matter how closely you zoom in. Pick any
+        corner of the triangle and magnify it, and you get the exact same shape. This property
+        is called self-similarity (it looks the same at every scale), and it's the defining
+        characteristic of a fractal.
+    </p>
+    <p>
+        The construction is deceptively simple: start with a triangle, remove the middle
+        quarter, and repeat forever. At each step, you're left with three copies of the
+        previous step, each half the size. The process never ends, and the result exists
+        somewhere between a one-dimensional line and a two-dimensional surface.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">The Equations</div>
+    <h2>Recursive construction</h2>
+    <p>
+        Two key quantities describe the Sierpinski triangle: the number of filled triangles
+        at each depth, and its fractal dimension.
+    </p>
+
+    <div class="equation-block">
+        \[ N_n = 3^n \]
+        <p>
+            After n iterations, there are 3<sup>n</sup> filled triangles. At depth 7, that's
+            2,187 triangles. At depth 9, it's 19,683.
+        </p>
+    </div>
+
+    <div class="equation-block">
+        \[ D = \frac{\log 3}{\log 2} \approx 1.585 \]
+        <p>
+            The Sierpinski triangle has a fractal dimension of about 1.585. It's more than
+            a line (dimension 1) but less than a filled surface (dimension 2). Each iteration
+            triples the number of pieces while halving their size, and log(3)/log(2) captures
+            exactly that ratio.
+        </p>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-label">Methods</div>
+    <h2>The chaos game</h2>
+    <p>
+        There's an entirely different way to construct the Sierpinski triangle. Pick three
+        points as vertices. Start from any random point. Then, repeatedly: choose one of the
+        three vertices at random and move halfway toward it. Plot the new point.
+    </p>
+    <p>
+        It seems like this should produce random noise. But after a few hundred points, the
+        Sierpinski triangle begins to emerge. After thousands of points, it's unmistakable.
+        This is called the "chaos game," and it reveals a deep connection between random
+        processes and fractal patterns.
+    </p>
+</div>
+
+<footer>
+    <a href="#home" data-tab="home">Back to portfolio</a>
+</footer>
+
+</div>
+</div><!-- end panel-sierpinski -->
+
+
+<!-- ============================================================
+     MANDELBROT PANEL
+     ============================================================ -->
+<div class="tab-panel" id="panel-mandelbrot">
+
+<div class="container">
+<header>
+    <h1>The Mandelbrot Set</h1>
+    <p class="tagline">Infinite complexity from the simplest possible equation: z squared plus c</p>
+</header>
+</div>
+
+<div class="canvas-wrapper" id="mandelbrot-canvas-wrapper">
+    <canvas class="viz-canvas crosshair" id="mandelbrot-canvas"></canvas>
+    <div class="viz-hud hud-above-caption" id="mandelbrot-hud">
+        <div class="viz-hud-phase" id="mandelbrot-hud-phase">RENDERING</div>
+        <div class="viz-hud-progress"><div class="viz-hud-progress-fill" id="mandelbrot-hud-progress-fill"></div></div>
+        <div class="viz-hud-detail" id="mandelbrot-hud-detail"></div>
+        <div class="viz-hud-coords" id="mandelbrot-hud-coords"></div>
+    </div>
+    <div class="viz-controls controls-above-caption" id="mandelbrot-controls">
+        <button id="mandelbrot-btn-zoom-out" title="Zoom out">&minus;</button>
+        <button id="mandelbrot-btn-reset" title="Reset view">&#x21BA;</button>
+    </div>
+    <div class="viz-sliders" id="mandelbrot-sliders">
+        <div class="slider-group">
+            <label>Iterations <span id="mandelbrot-iter-val">200</span></label>
+            <input type="range" id="mandelbrot-iter-slider" min="50" max="1000" step="50" value="200">
+        </div>
+        <div class="slider-group">
+            <label>Colors</label>
+            <select class="viz-select" id="mandelbrot-color-select">
+                <option value="inferno" selected>Inferno</option>
+                <option value="gold">Gold</option>
+                <option value="ocean">Ocean</option>
+                <option value="grayscale">Grayscale</option>
+            </select>
+        </div>
+    </div>
+    <div class="viz-caption" id="mandelbrot-caption">Click anywhere to zoom in</div>
+</div>
+
+<div class="container">
+
+<div class="section">
+    <div class="section-label">The Equation</div>
+    <h2>The simplest equation with infinite complexity</h2>
+    <p>
+        The Mandelbrot set comes from iterating one equation over and over:
+    </p>
+    <div class="equation-block">
+        \[z_{n+1} = z_n^2 + c\]
+        <p>
+            Start with z = 0 and pick a complex number c. Square z, add c, and repeat.
+            If the result stays bounded (never flies off to infinity), then c is in the
+            Mandelbrot set. If it escapes, c is outside. That's the entire definition.
+        </p>
+    </div>
+    <p>
+        What makes this remarkable is that such a simple rule produces a shape of literally
+        infinite complexity. No matter how far you zoom in, you find new detail: spirals,
+        tendrils, miniature copies of the whole set, structures that never repeat exactly.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">The Colors</div>
+    <h2>What the colors mean</h2>
+    <p>
+        Points inside the Mandelbrot set are colored black because their iterations never escape.
+        Everything else is colored based on how quickly the iteration escapes. Points
+        near the boundary take many iterations to escape, so they get "hotter" colors.
+        Points far away escape almost immediately.
+    </p>
+    <div class="equation-block">
+        \[\text{escape: } |z_n|^2 > 4\]
+        <p>
+            We check whether the squared magnitude of z exceeds 4. Once it does, we know
+            the sequence will shoot off to infinity. The number of iterations it took to
+            reach this threshold determines the color.
+        </p>
+    </div>
+    <p>
+        The boundary of the Mandelbrot set, the edge between "stays bounded" and
+        "escapes," is where all the visual complexity lives. Zooming into this
+        boundary reveals an endless parade of intricate structures.
+    </p>
+</div>
+
+<div class="section">
+    <div class="section-label">Anatomy</div>
+    <h2>The shapes within the shape</h2>
+    <p>
+        The largest region is the <strong>main cardioid</strong>, the heart-shaped
+        central body. Attached to its left is the <strong>period-2 bulb</strong>, a
+        perfect circle. Smaller bulbs branch off at precise angles, each corresponding
+        to a specific repeating cycle of the iteration.
+    </p>
+    <p>
+        At the tips of the filaments and in the valleys between bulbs, you can find
+        miniature copies of the entire Mandelbrot set. These "mini-brots" appear at
+        every scale, surrounded by their own spiraling decorations. The set is
+        connected, meaning every part of it is joined together, no matter how thin the
+        connecting filaments may appear.
+    </p>
+    <p class="note">
+        The Mandelbrot set lives in the complex plane, where the horizontal axis
+        represents the real part of c and the vertical axis represents the imaginary
+        part. The full set fits within a circle of radius 2 centered at the origin.
+    </p>
+</div>
+
+<footer>
+    <a href="#home" data-tab="home">Back to portfolio</a>
+</footer>
+
+</div>
+</div><!-- end panel-mandelbrot -->
+
+</main>
+
+<!-- Tab controller (must load before viz modules) -->
+<script src="js/tab-controller.js"></script>
+
+<!-- Visualization modules -->
+<script src="js/viz-lorenz.js"></script>
+<script src="js/viz-mobius.js"></script>
+<script src="js/viz-klein.js"></script>
+<script src="js/viz-sierpinski.js"></script>
+<script src="js/viz-mandelbrot.js"></script>
+
+<!-- Thumbnail renderers for the home page cards -->
+<script>
 (function () {
     'use strict';
 
     var ACCENT = '#c8a26a';
-    var ACCENT_DIM = 'rgba(200, 162, 106, 0.6)';
     var BG = '#101010';
 
     function setupCanvas(id) {
@@ -190,12 +885,10 @@
         return { ctx: ctx, w: w, h: h, dpr: dpr };
     }
 
-    // --- Lorenz: 2D projection (XZ plane) ---
     function drawLorenz() {
         var s = setupCanvas('thumb-lorenz');
         if (!s) return;
         var ctx = s.ctx, w = s.w, h = s.h;
-
         var SIGMA = 10, RHO = 28, BETA = 8 / 3, DT = 0.005;
         var x = 0.1, y = 0, z = 0;
         var pts = [];
@@ -206,8 +899,6 @@
             x += dx; y += dy; z += dz;
             pts.push([x, z]);
         }
-
-        // Scale to canvas
         var minX = -25, maxX = 25, minZ = 0, maxZ = 50;
         ctx.strokeStyle = ACCENT;
         ctx.lineWidth = 0.8;
@@ -223,7 +914,6 @@
         ctx.globalAlpha = 1;
     }
 
-    // --- Mobius: wireframe strip ---
     function drawMobius() {
         var s = setupCanvas('thumb-mobius');
         if (!s) return;
@@ -231,12 +921,9 @@
         var cx = w / 2, cy = h / 2;
         var R = Math.min(w, h) * 0.3;
         var W_STRIP = R * 0.35;
-
         ctx.strokeStyle = ACCENT;
         ctx.lineWidth = 1;
         ctx.globalAlpha = 0.7;
-
-        // Draw edge curves
         for (var edge = -1; edge <= 1; edge += 2) {
             ctx.beginPath();
             for (var i = 0; i <= 200; i++) {
@@ -246,7 +933,6 @@
                 var x3d = r * Math.cos(u);
                 var y3d = r * Math.sin(u);
                 var z3d = v * Math.sin(u / 2);
-                // Simple isometric projection
                 var px = cx + x3d * 0.7 - y3d * 0.3;
                 var py = cy - z3d * 0.9 - y3d * 0.3;
                 if (i === 0) ctx.moveTo(px, py);
@@ -254,8 +940,6 @@
             }
             ctx.stroke();
         }
-
-        // Cross-ribs
         ctx.globalAlpha = 0.25;
         for (var i = 0; i < 24; i++) {
             var u = (i / 24) * 2 * Math.PI;
@@ -276,7 +960,6 @@
         ctx.globalAlpha = 1;
     }
 
-    // --- Klein: wireframe classic bottle ---
     function drawKlein() {
         var s = setupCanvas('thumb-klein');
         if (!s) return;
@@ -284,10 +967,8 @@
         var cx = w / 2, cy = h / 2 + 4;
         var PI = Math.PI;
         var scale = Math.min(w, h) * 0.022;
-
         ctx.strokeStyle = ACCENT;
         ctx.lineWidth = 0.8;
-
         function kleinPt(u, v) {
             var cosU = Math.cos(u), sinU = Math.sin(u);
             var cosV = Math.cos(v), sinV = Math.sin(v);
@@ -306,8 +987,6 @@
                 py: cy - (y3d * 0.75 + z3d * 0.25) * scale
             };
         }
-
-        // Longitudinal ribs (u-lines)
         ctx.globalAlpha = 0.5;
         for (var vi = 0; vi <= 6; vi++) {
             var v = (vi / 6) * 2 * PI;
@@ -320,8 +999,6 @@
             }
             ctx.stroke();
         }
-
-        // Cross-section rings (v-lines)
         ctx.globalAlpha = 0.25;
         for (var ui = 0; ui < 12; ui++) {
             var u = (ui / 12) * 2 * PI;
@@ -337,29 +1014,22 @@
         ctx.globalAlpha = 1;
     }
 
-    // --- Sierpinski: recursive triangle ---
     function drawSierpinski() {
         var s = setupCanvas('thumb-sierpinski');
         if (!s) return;
         var ctx = s.ctx, w = s.w, h = s.h;
-
         var pad = 20;
         var side = Math.min(w - pad * 2, (h - pad * 2) / (Math.sqrt(3) / 2));
         var ax = w / 2, ay = pad;
         var bx = w / 2 - side / 2, by = pad + side * Math.sqrt(3) / 2;
         var cx_t = w / 2 + side / 2, cy_t = by;
-
         ctx.fillStyle = ACCENT;
         ctx.globalAlpha = 0.75;
-
         function sierp(ax, ay, bx, by, cx, cy, depth) {
             if (depth === 0) {
                 ctx.beginPath();
-                ctx.moveTo(ax, ay);
-                ctx.lineTo(bx, by);
-                ctx.lineTo(cx, cy);
-                ctx.closePath();
-                ctx.fill();
+                ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.lineTo(cx, cy);
+                ctx.closePath(); ctx.fill();
                 return;
             }
             var mABx = (ax + bx) / 2, mABy = (ay + by) / 2;
@@ -369,52 +1039,40 @@
             sierp(mABx, mABy, bx, by, mBCx, mBCy, depth - 1);
             sierp(mACx, mACy, mBCx, mBCy, cx, cy, depth - 1);
         }
-
         sierp(ax, ay, bx, by, cx_t, cy_t, 6);
         ctx.globalAlpha = 1;
     }
 
-    // --- Mandelbrot: low-res fractal ---
     function drawMandelbrot() {
         var s = setupCanvas('thumb-mandelbrot');
         if (!s) return;
         var ctx = s.ctx, w = s.w, h = s.h, dpr = s.dpr;
-
-        // Reset transform so putImageData works at physical pixel level
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         var pw = w * dpr, ph = h * dpr;
         var imgData = ctx.createImageData(pw, ph);
         var data = imgData.data;
         var cxM = -0.5, cyM = 0.0, zoomM = w / 3.5;
         var maxIter = 80;
-
         for (var py = 0; py < ph; py++) {
             for (var px = 0; px < pw; px++) {
-                // Map physical pixel back to CSS coords, then to complex plane
                 var x0 = cxM + (px / dpr - w / 2) / zoomM;
                 var y0 = cyM + (py / dpr - h / 2) / zoomM;
                 var x = 0, y = 0, xx = 0, yy = 0, iter = 0;
-
                 while (xx + yy <= 4 && iter < maxIter) {
                     y = 2 * x * y + y0;
                     x = xx - yy + x0;
-                    xx = x * x;
-                    yy = y * y;
+                    xx = x * x; yy = y * y;
                     iter++;
                 }
-
                 var idx = (py * pw + px) * 4;
                 if (iter === maxIter) {
-                    // Inside the set: background
                     data[idx] = 16; data[idx + 1] = 16; data[idx + 2] = 16;
                 } else {
-                    // Smooth iteration for anti-banding
                     var log2 = Math.log(2);
                     var nu = Math.log(Math.log(Math.sqrt(xx + yy)) / log2) / log2;
                     var t = ((iter + 1 - nu) / maxIter * 6) % 1;
                     t = Math.max(0, Math.min(1, t));
                     var b = Math.pow(t, 0.7);
-                    // Lerp from background (#101010) to accent (#c8a26a)
                     data[idx]     = Math.floor(16 + 184 * b);
                     data[idx + 1] = Math.floor(16 + 146 * b);
                     data[idx + 2] = Math.floor(16 + 90 * b);
@@ -425,13 +1083,23 @@
         ctx.putImageData(imgData, 0, 0);
     }
 
-    // Render all thumbnails
-    drawLorenz();
-    drawMobius();
-    drawKlein();
-    drawSierpinski();
-    drawMandelbrot();
+    // Only draw thumbnails when the home panel is visible
+    function drawAll() {
+        drawLorenz();
+        drawMobius();
+        drawKlein();
+        drawSierpinski();
+        drawMandelbrot();
+    }
 
+    // Draw on load — the home panel starts visible
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () {
+            requestAnimationFrame(drawAll);
+        });
+    } else {
+        requestAnimationFrame(drawAll);
+    }
 })();
 </script>
 
