@@ -11,9 +11,10 @@ window.VizKlein = (function () {
     var active = false;
 
     // --- Parameters ---
-    var RES = 40;
+    var RES = 30;
     var DEFAULT_OPACITY = 1.0;
-    var ORBIT_SPEED = 0.003;
+    var ORBIT_SPEED_PER_SEC = 0.003 * 60;  // per-second orbit speed (was per-frame)
+    var FRAME_INTERVAL = 1000 / 30;        // target ~30fps
     var RESUME_DELAY = 5000;
 
     // DOM references
@@ -30,6 +31,7 @@ window.VizKlein = (function () {
     var hudFrameCount = 0;
     var HUD_UPDATE_INTERVAL = 6;
     var glSceneRef = null;
+    var lastFrameTime = 0;
 
     var DEFAULT_EYE = { x: 1.6, y: 1.6, z: 0.8 };
     var ORBIT_RADIUS = Math.sqrt(DEFAULT_EYE.x * DEFAULT_EYE.x + DEFAULT_EYE.y * DEFAULT_EYE.y);
@@ -94,8 +96,16 @@ window.VizKlein = (function () {
         };
     }
 
-    function tick() {
+    function tick(timestamp) {
         if (!active) return;
+
+        // Throttle to ~30fps
+        if (timestamp - lastFrameTime < FRAME_INTERVAL) {
+            requestAnimationFrame(tick);
+            return;
+        }
+        var deltaTime = (lastFrameTime === 0) ? FRAME_INTERVAL / 1000 : (timestamp - lastFrameTime) / 1000;
+        lastFrameTime = timestamp;
 
         hudFrameCount++;
         if (hudFrameCount >= HUD_UPDATE_INTERVAL) {
@@ -104,7 +114,7 @@ window.VizKlein = (function () {
         }
 
         if (rotating) {
-            orbitAngle += ORBIT_SPEED;
+            orbitAngle += ORBIT_SPEED_PER_SEC * deltaTime;
             var eye = orbitCameraEye(orbitAngle);
             if (!glSceneRef) {
                 var s = plotDiv._fullLayout && plotDiv._fullLayout.scene &&
@@ -187,6 +197,11 @@ window.VizKlein = (function () {
 
         Plotly.newPlot(plotDiv, [trace], layout, config);
 
+        // Grab the WebGL scene reference immediately to avoid relayout fallback
+        var s = plotDiv._fullLayout && plotDiv._fullLayout.scene &&
+                plotDiv._fullLayout.scene._scene;
+        if (s && s.setCamera) glSceneRef = s;
+
         orbitAngle = Math.atan2(DEFAULT_EYE.y, DEFAULT_EYE.x);
 
         plotDiv.addEventListener('mousedown', interactionPause);
@@ -241,7 +256,7 @@ window.VizKlein = (function () {
     function resume() {
         if (!initialized) return init();
         active = true;
-        glSceneRef = null;
+        lastFrameTime = 0;
         requestAnimationFrame(function () {
             Plotly.Plots.resize(plotDiv);
             requestAnimationFrame(tick);
