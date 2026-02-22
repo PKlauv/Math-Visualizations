@@ -2,67 +2,63 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-An interactive single-page collection of mathematical objects — chaos theory, topology, and fractals — rendered in the browser with smooth tab transitions and no page reloads.
+Interactive math visualizations that run in the browser. Covers chaos theory, topology, and fractals, all on a single page with tab switching and no reloads.
 
 **[View Live](https://pklauv.github.io/Math-Visualizations/)**
 
 ## Visualizations
 
-- **Lorenz Attractor** — The butterfly of chaos theory. Animated 3D trajectory with cinematic camera orbit, differential equations, and the story behind Lorenz's 1963 discovery.
+- **Lorenz Attractor**: Animated 3D trajectory of the classic chaotic system. Includes a camera orbit, the differential equations, and the story of how Lorenz stumbled onto chaos in 1963.
 
-- **Mobius Strip** — A surface with one side and one edge. Interactive 3D surface with adjustable half-twists and width, parametric equations, and connections to the Klein bottle.
+- **Mobius Strip**: A one-sided surface you can rotate and explore. Sliders let you change the number of half-twists and the strip width.
 
-- **Klein Bottle** — A closed surface with no inside or outside. Figure-8 immersion in 3D with adjustable opacity, auto-rotation, and topology explanations.
+- **Klein Bottle**: A surface with no inside or outside, shown as a figure-8 immersion in 3D. Auto-rotates, with an opacity slider to see the self-intersection.
 
-- **Sierpinski Triangle** — Infinite self-similarity from a simple rule. Recursive subdivision and chaos game methods, animated depth build-up, and fractal dimension.
+- **Sierpinski Triangle**: Built two ways: recursive subdivision and the chaos game. Watch it animate depth by depth, or see 50,000 random points converge into a fractal.
 
-- **Mandelbrot Set** — Infinite complexity from z squared plus c. Click-to-zoom explorer with adjustable iterations, multiple color schemes, and smooth coloring.
+- **Mandelbrot Set**: Click-to-zoom fractal explorer with adjustable iteration count and multiple color palettes.
 
 ## Features
 
-- **Single-page app** — All visualizations live on one page with tab switching, no page reloads
-- **Hash routing** — Direct links like `index.html#lorenz` work, and browser back/forward navigates between tabs
-- **Lazy initialization** — Visualizations only load when their tab is first opened
-- **Pause/resume** — Switching away from a tab pauses its animation to save CPU; switching back resumes it
-- **Mobile-friendly** — Responsive layout with horizontally scrollable tab bar on small screens
-- **Educational content** — Each visualization includes equations (rendered with MathJax), parameter tables, and plain-language explanations
+- **Single-page app**: Everything lives on one page with tab switching, no full page reloads
+- **Hash routing**: Links like `index.html#lorenz` go directly to a visualization, and back/forward work as expected
+- **Lazy loading**: Each visualization only initializes when you first open its tab
+- **Pause/resume**: Leaving a tab pauses its animation; coming back resumes it
+- **Mobile support**: Responsive layout with a scrollable tab bar on small screens
+- **Educational write-ups**: Each page has equations (MathJax), parameter tables, and explanations written in plain language
 
 ## Built With
 
-- [Plotly.js](https://plotly.com/javascript/) — 3D surface and scatter plotting (Lorenz, Mobius, Klein)
-- [MathJax](https://www.mathjax.org/) — LaTeX equation rendering
-- HTML5 Canvas — 2D fractal rendering (Sierpinski, Mandelbrot)
-- Vanilla HTML, CSS, and JavaScript — no build tools, no frameworks
+- [Plotly.js](https://plotly.com/javascript/) for 3D plots (Lorenz, Mobius, Klein)
+- [MathJax](https://www.mathjax.org/) for LaTeX rendering
+- HTML5 Canvas for 2D fractals (Sierpinski, Mandelbrot)
+- Vanilla HTML, CSS, and JS. No build tools or frameworks.
 
 ## Project Structure
 
 ```
-index.html                 — SPA shell with all tab panels
-css/shared.css             — Shared styles, tab panel transitions, viz component classes
-js/tab-controller.js       — Tab switching, hash routing, lazy init orchestration
-js/viz-lorenz.js           — Lorenz attractor module
-js/viz-mobius.js           — Mobius strip module
-js/viz-klein.js            — Klein bottle module
-js/viz-sierpinski.js       — Sierpinski triangle module
-js/viz-mandelbrot.js       — Mandelbrot set module
-js/mandelbrot-worker.js    — Web Worker for off-thread Mandelbrot computation
-visualizations/*.html      — Standalone pages (kept for backward compatibility)
+index.html                 - SPA shell with all tab panels
+css/shared.css             - shared styles, transitions, viz component classes
+js/tab-controller.js       - tab switching, hash routing, lazy init
+js/viz-lorenz.js           - Lorenz attractor module
+js/viz-mobius.js            - Mobius strip module
+js/viz-klein.js             - Klein bottle module
+js/viz-sierpinski.js        - Sierpinski triangle module
+js/viz-mandelbrot.js        - Mandelbrot set module
+js/mandelbrot-worker.js     - Web Worker for off-thread Mandelbrot rendering
+visualizations/*.html       - standalone pages (kept for backward compat)
 ```
 
-## How It Has Improved
+## How This Project Evolved
 
-This project started as a simple Python primer repo and evolved into a full interactive math visualization portfolio over the course of development.
+This repo started as a Python primer with a virtual environment and a requirements file. It changed direction when I added a 3D Lorenz attractor using Plotly.js. I spent a while getting the animation smooth, tuning the camera, and writing up the math and history behind it.
 
-**Started as a Python project** — The initial commits set up a basic Python environment with a virtual environment and requirements file. The repo was originally scoped as a coding primer.
+From there I added four more visualizations: the Mobius strip, Klein bottle, Sierpinski triangle, and Mandelbrot set. Each one got its own page with a shared nav bar and dark theme. The landing page had a card grid with canvas thumbnails.
 
-**First visualization: Lorenz Attractor** — The project shifted direction when a 3D Lorenz attractor was added using Plotly.js. Early iterations focused on getting the animation working, then optimizing frame rate performance, and adding educational content like equations and the history behind Lorenz's discovery.
+The Klein bottle page needed several rounds of fixes to work properly on mobile. Layout and rendering issues kept coming up.
 
-**Expanded to a multi-page portfolio** — Four more visualizations were added — the Mobius strip, Klein bottle, Sierpinski triangle, and Mandelbrot set — each on its own HTML page with a shared navigation bar and consistent dark-theme design. The landing page used a card grid with programmatic canvas thumbnails.
-
-**Mobile and cross-browser fixes** — The Klein bottle page went through several rounds of fixes to get it working properly on mobile devices, addressing layout and rendering issues.
-
-**Consolidated into a single-page app** — The most recent major change replaced the multi-page architecture with a single-page tab-based design. Each visualization was extracted into its own JS module with an `init/pause/resume` interface. A tab controller handles hash routing, lazy initialization, and CSS fade transitions between panels. This eliminated page reloads, reduced redundant resource loading, and improved the overall user experience.
+The biggest structural change was consolidating everything into a single-page app. Each visualization became its own JS module with `init/pause/resume` methods, and a tab controller handles routing, lazy loading, and fade transitions. No more full page reloads.
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE).
+[MIT](./LICENSE)
