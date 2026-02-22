@@ -1,11 +1,11 @@
 # Math Phenomena, Visualized
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)
-![Plotly](https://img.shields.io/badge/Plotly.js-3F4F75?logo=plotly&logoColor=white)
-![GitHub Pages](https://img.shields.io/badge/Deployed-GitHub%20Pages-blue?logo=github)
+[![HTML5](https://img.shields.io/badge/HTML5-E34F26?logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
+[![CSS3](https://img.shields.io/badge/CSS3-1572B6?logo=css3&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/CSS)
+[![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![Plotly](https://img.shields.io/badge/Plotly.js-3F4F75?logo=plotly&logoColor=white)](https://plotly.com/javascript/)
+[![GitHub Pages](https://img.shields.io/badge/Deployed-GitHub%20Pages-blue?logo=github)](https://pages.github.com/)
 
 Interactive math visualizations that run in the browser. Covers chaos theory, topology, and fractals, all on a single page with tab switching and no reloads.
 
