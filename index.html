@@ -241,6 +241,8 @@
 <div class="landing-footer">
     <p class="credit">Made by Pk Lauvstad | Built with vanilla HTML, CSS, and JavaScript</p>
     <form class="feedback-form" id="feedback-form">
+        <label for="feedback-name">Name / GitHub (optional)</label>
+        <input type="text" id="feedback-name" placeholder="@username or name" />
         <label for="feedback-category">Category</label>
         <select id="feedback-category">
             <option value="general">General feedback</option>
@@ -1208,7 +1210,8 @@
 
             var { error } = await sb.from('feedback').insert({
                 message: message,
-                category: document.getElementById('feedback-category').value
+                category: document.getElementById('feedback-category').value,
+                name: document.getElementById('feedback-name').value.trim() || null
             });
 
             if (error) {
