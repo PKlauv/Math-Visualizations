@@ -20,7 +20,7 @@
 
 /* Global reset — consistent box model and smooth anchor scrolling */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 /* Base body styles */
 body {
@@ -29,6 +29,7 @@ body {
     font-family: var(--font-body);
     font-size: 1.05rem;
     line-height: 1.8;
+    overflow-x: hidden;
 }
 
 /* Site navigation bar */
