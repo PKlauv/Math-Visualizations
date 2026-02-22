@@ -137,6 +137,16 @@ The Klein bottle page needed several rounds of fixes to work properly on mobile.
 
 The biggest structural change was consolidating everything into a single-page app. Each visualization became its own JS module with `init/pause/resume` methods, and a tab controller handles routing, lazy loading, and fade transitions. No more full page reloads.
 
+Getting the Lorenz animation to run smoothly took several rounds of optimization. The first version worked but stuttered. I went through multiple passes tuning `requestAnimationFrame`, trimming unnecessary redraws, and profiling frame rates until it ran at a steady 60fps.
+
+I also ran into a bug where scrolling over a running animation caused visual glitches. The fix was adding pause logic that detects when a visualization leaves the viewport. Small thing, but it taught me about browser rendering quirks you only find by actually using the page.
+
+At one point I renamed and refocused the entire repo around the Lorenz attractor before expanding scope again. That taught me something about project direction: it's fine to narrow down and then grow back out.
+
+Dark/light theming, keyboard shortcuts, and accessibility weren't added one feature at a time. They came together in a single large refactoring pass. Touching every module at once forced me to think about consistency across the whole app.
+
+Adding a Supabase feedback form was the first time I connected a third-party backend service. Anonymous auth, a database insert, and a simple form. No server of my own, just wiring up an API.
+
 > What started as a Python primer turned into a deep dive into browser graphics, math, and vanilla JS architecture.
 
 This project was also a hands-on experiment with git, GitHub, and building things alongside AI. Most of the math, visualizations, and code were built with the assistance of AI tools. I don't claim original ownership of the math or the code. The goal was to learn by doing: practicing version control, working with GitHub Pages, and figuring out how to collaborate with AI to build something real.
