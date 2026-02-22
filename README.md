@@ -34,7 +34,6 @@ Interactive math visualizations that run in the browser. Covers chaos theory, to
 - **Mobile support**: Responsive layout with a scrollable tab bar on small screens
 - **Educational write-ups**: Each page has equations (MathJax), parameter tables, and explanations written in plain language
 TEST
-
 ## :hammer_and_wrench: Built With
 
 | Category | Tech |
