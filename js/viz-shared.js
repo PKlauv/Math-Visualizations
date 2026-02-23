@@ -262,9 +262,48 @@ window.VizShared = (function () {
         }
     }
 
+    // ======================================================================
+    // Step 5: Scroll-triggered section reveal
+    // ======================================================================
+
+    function initScrollReveal() {
+        var prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (prefersReduced) {
+            // Make all sections visible immediately
+            var sections = document.querySelectorAll('.section');
+            for (var i = 0; i < sections.length; i++) {
+                sections[i].classList.add('revealed');
+            }
+            return;
+        }
+
+        if (!('IntersectionObserver' in window)) {
+            var sections = document.querySelectorAll('.section');
+            for (var i = 0; i < sections.length; i++) {
+                sections[i].classList.add('revealed');
+            }
+            return;
+        }
+
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('revealed');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        var sections = document.querySelectorAll('.section');
+        for (var i = 0; i < sections.length; i++) {
+            observer.observe(sections[i]);
+        }
+    }
+
     onReady(function () {
         initThemeToggle();
         initKeyboardShortcuts();
+        initScrollReveal();
         var kbdBtn = document.getElementById('kbd-shortcut-btn');
         if (kbdBtn) kbdBtn.addEventListener('click', toggleHelp);
     });

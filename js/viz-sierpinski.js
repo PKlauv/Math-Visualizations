@@ -119,20 +119,20 @@ window.VizSierpinski = (function () {
     }
 
     function drawRemovedUpTo(depth) {
+        ctx.fillStyle = BG_COLOR;
+        ctx.beginPath();
         for (var d = 1; d <= depth; d++) {
             if (!removedByLevel[d]) continue;
             var tris = removedByLevel[d];
-            ctx.fillStyle = BG_COLOR;
             for (var i = 0; i < tris.length; i++) {
                 var t = tris[i];
-                ctx.beginPath();
                 ctx.moveTo(t.ax, t.ay);
                 ctx.lineTo(t.bx, t.by);
                 ctx.lineTo(t.cx, t.cy);
                 ctx.closePath();
-                ctx.fill();
             }
         }
+        ctx.fill();
     }
 
     function setCaption(text) {

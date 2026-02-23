@@ -153,6 +153,8 @@ window.VizLorenz = (function () {
         frame = 0;
         Plotly.restyle(plotDiv, { 'marker.opacity': [0] }, 1);
         VizShared.fadeCaption(captionDiv, 'Drag to look around, or hit reset to run it again');
+        // Memory cleanup: trajectory data is already in the Plotly trace, free the JS arrays
+        allX = null; allY = null; allZ = null; allC = null;
     }
 
     function transitionToDone() {
@@ -171,6 +173,9 @@ window.VizLorenz = (function () {
         clearTimeout(resumeTimer);
         btnPause.textContent = '\u23F8';
         btnPause.setAttribute('aria-label', 'Pause animation');
+
+        // Recompute trajectory if it was freed after draw phase
+        if (!allX) computeTrajectory();
 
         Plotly.restyle(plotDiv, {
             x: [[allX[0]]], y: [[allY[0]]], z: [[allZ[0]]],
@@ -360,9 +365,11 @@ window.VizLorenz = (function () {
         }
         if (phase === 'draw') {
             drawnPoints = STEPS;
-            Plotly.restyle(plotDiv, {
-                x: [allX], y: [allY], z: [allZ], 'line.color': [allC]
-            }, 0);
+            if (allX) {
+                Plotly.restyle(plotDiv, {
+                    x: [allX], y: [allY], z: [allZ], 'line.color': [allC]
+                }, 0);
+            }
             transitionToOrbit();
         } else if (phase === 'orbit') {
             transitionToDone();

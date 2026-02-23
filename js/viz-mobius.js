@@ -170,6 +170,8 @@ window.VizMobius = (function () {
     function transitionToOrbit() {
         phase = 'orbit'; frame = 0;
         VizShared.fadeCaption(captionDiv, 'Drag to look around, or adjust sliders to explore');
+        // Memory cleanup: draw phase frames no longer needed
+        drawFrameCache = [];
     }
 
     function transitionToDone() {

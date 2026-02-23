@@ -1,3 +1,13 @@
 .venv
 .claude
 __pycache__/
+node_modules/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Playwright MCP inspection screenshots
+*.png
+
+# Playwright screenshot baselines
+tests/**/*-snapshots/

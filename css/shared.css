@@ -84,8 +84,12 @@ body {
     outline: none;
 }
 
-/* Site navigation bar */
+/* Site navigation bar — sticky on mobile */
 .site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
     max-width: 960px;
     margin: 0 auto;
     padding: 16px 28px;
@@ -118,6 +122,11 @@ body {
 .nav-links a.active,
 .nav-links a[aria-selected="true"] {
     color: var(--accent);
+}
+/* Active tab underline indicator */
+.nav-links a.active,
+.nav-links a[aria-selected="true"] {
+    box-shadow: 0 2px 0 0 var(--accent);
 }
 
 /* Theme toggle button */
@@ -186,6 +195,17 @@ header .tagline {
     letter-spacing: 2px;
     color: var(--accent);
     margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.section-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 2px;
+    background: var(--accent);
+    flex-shrink: 0;
 }
 h2 {
     font-family: var(--font-body);
@@ -205,6 +225,7 @@ p:last-child { margin-bottom: 0; }
     background: var(--bg-surface);
     border: 1px solid var(--border);
     border-left: 3px solid var(--accent);
+    border-radius: 4px;
     padding: 24px 28px;
     margin: 24px 0;
     overflow-x: auto;
@@ -309,13 +330,15 @@ footer a:hover { border-bottom-color: var(--accent); }
 .tab-panel {
     display: none;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
 }
 .tab-panel.active {
     display: block;
 }
 .tab-panel.visible {
     opacity: 1;
+    transform: translateY(0);
 }
 
 /* =================================================================
@@ -607,6 +630,99 @@ footer a:hover { border-bottom-color: var(--accent); }
     color: var(--accent);
     min-width: 28px;
     text-align: center;
+}
+
+/* =================================================================
+   Loading spinner — CSS-only pulse while viz initializes
+   ================================================================= */
+.viz-plot.loading::before,
+.viz-canvas.loading::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin: -20px 0 0 -20px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: viz-spinner 0.8s linear infinite;
+    z-index: 5;
+}
+.viz-plot.loading,
+.viz-canvas.loading {
+    position: relative;
+}
+@keyframes viz-spinner {
+    to { transform: rotate(360deg); }
+}
+
+/* =================================================================
+   Scroll-triggered section reveal
+   ================================================================= */
+.section {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.section.revealed {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* =================================================================
+   Nav scroll indicator — gradient fade on mobile
+   ================================================================= */
+@media (max-width: 600px) {
+    .nav-links {
+        position: relative;
+        mask-image: linear-gradient(to right, black 85%, transparent 100%);
+        -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    }
+}
+
+/* =================================================================
+   Touch-friendly cards — active feedback for touch devices
+   ================================================================= */
+@media (hover: none) {
+    .viz-card:active {
+        transform: scale(0.98);
+    }
+}
+
+/* =================================================================
+   Tablet breakpoint — single column, reduced viz height
+   ================================================================= */
+@media (max-width: 900px) {
+    .viz-plot { height: 440px; }
+    .viz-canvas { height: 440px; }
+}
+
+/* =================================================================
+   CSS performance — will-change and contain
+   ================================================================= */
+.tab-panel {
+    will-change: opacity;
+}
+.plot-wrapper,
+.canvas-wrapper {
+    contain: content;
+}
+.viz-hud-progress-fill {
+    will-change: transform;
+}
+
+/* =================================================================
+   Reduced motion — disable animations for users who prefer it
+   ================================================================= */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    html { scroll-behavior: auto; }
 }
 
 /* Responsive — tighter spacing on narrow screens */

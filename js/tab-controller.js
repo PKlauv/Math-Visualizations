@@ -6,6 +6,61 @@
 (function () {
     'use strict';
 
+    // --- Lazy-load Plotly.js on demand (~3.5MB saved on initial load) ---
+    var PLOTLY_URL = 'https://cdn.plot.ly/plotly-2.35.2.min.js';
+    var plotlyPromise = null;
+    var PLOTLY_TABS = { lorenz: true, mobius: true, klein: true };
+
+    function ensurePlotly(callback) {
+        if (typeof Plotly !== 'undefined') {
+            callback();
+            return;
+        }
+        if (!plotlyPromise) {
+            plotlyPromise = new Promise(function (resolve, reject) {
+                var script = document.createElement('script');
+                script.src = PLOTLY_URL;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        plotlyPromise.then(callback).catch(function () {
+            console.error('Failed to load Plotly.js');
+        });
+    }
+
+    // --- Lazy-load Supabase SDK on demand ---
+    var SUPABASE_URL = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    var supabaseLoaded = false;
+
+    function ensureSupabase() {
+        if (supabaseLoaded || typeof supabase !== 'undefined') return;
+        supabaseLoaded = true;
+        var script = document.createElement('script');
+        script.src = SUPABASE_URL;
+        document.head.appendChild(script);
+    }
+
+    // Load Supabase when feedback form enters viewport or on idle
+    function initSupabaseLazy() {
+        var form = document.getElementById('feedback-form');
+        if (!form) return;
+        if ('IntersectionObserver' in window) {
+            var obs = new IntersectionObserver(function (entries) {
+                if (entries[0].isIntersecting) {
+                    ensureSupabase();
+                    obs.disconnect();
+                }
+            }, { rootMargin: '200px' });
+            obs.observe(form);
+        } else if ('requestIdleCallback' in window) {
+            requestIdleCallback(ensureSupabase);
+        } else {
+            setTimeout(ensureSupabase, 3000);
+        }
+    }
+
     // --- Tab registry: maps tab name to its viz module ---
     var vizModules = {
         lorenz:     function () { return window.VizLorenz; },
@@ -50,12 +105,27 @@
         if (initializedTabs[tabName]) return;
         initializedTabs[tabName] = true;
 
-        var getModule = vizModules[tabName];
-        if (getModule) {
-            var mod = getModule();
-            if (mod && mod.init) {
-                mod.init();
+        // Add loading class to viz container
+        var plotEl = document.getElementById(tabName + '-plot') || document.getElementById(tabName + '-canvas');
+        if (plotEl) plotEl.classList.add('loading');
+
+        function doInit() {
+            var getModule = vizModules[tabName];
+            if (getModule) {
+                var mod = getModule();
+                if (mod && mod.init) {
+                    mod.init();
+                }
             }
+            // Remove loading class after init
+            if (plotEl) plotEl.classList.remove('loading');
+        }
+
+        // Plotly tabs need the library loaded first
+        if (PLOTLY_TABS[tabName]) {
+            ensurePlotly(doInit);
+        } else {
+            doInit();
         }
 
         // MathJax safety net: typeset the panel on first activation
@@ -119,7 +189,8 @@
                 history.pushState(null, '', '#' + tabName);
             }
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            var scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+            window.scrollTo({ top: 0, behavior: scrollBehavior });
 
             // Init or resume the new viz
             if (tabName !== 'home') {
@@ -187,6 +258,9 @@
         if (hash !== 'home') {
             initTab(hash);
         }
+
+        // Lazy-load Supabase SDK
+        initSupabaseLazy();
     }
 
     // Run on DOM ready

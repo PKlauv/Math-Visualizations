@@ -10,18 +10,28 @@
 <meta property="og:description" content="Explore chaos theory, topology, and fractals through interactive browser-based visualizations.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#8734;</text></svg>">
 <title>Math Phenomena, Visualized</title>
-<!-- Plotly.js — interactive 3D plotting and animation -->
-<script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
 <!-- MathJax 3 — renders LaTeX equations -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
-<!-- Supabase JS — feedback form backend -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<!-- Plotly.js and Supabase are lazy-loaded on demand (see tab-controller.js) -->
 <link rel="stylesheet" href="css/shared.css">
 <style>
 .landing-header {
     padding: 64px 0 48px;
     text-align: center;
     border-bottom: 1px solid var(--border);
+    position: relative;
+}
+.landing-header::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(200,162,106,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
 }
 .landing-header h1 {
     font-family: var(--font-body);
@@ -60,6 +70,11 @@
 .viz-card:hover {
     border-color: var(--accent);
     transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(200,162,106,0.12);
+}
+.viz-card:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(200,162,106,0.08);
 }
 .viz-thumb {
     width: 100%;
@@ -77,6 +92,10 @@
     letter-spacing: 2px;
     color: var(--accent);
 }
+/* Category-colored tags */
+.viz-card[data-category="topology"] .viz-tag { color: #9b89b4; }
+.viz-card[data-category="fractal"] .viz-tag { color: #6aa8a0; }
+.viz-card[data-category="chaos"] .viz-tag { color: var(--accent); }
 .viz-card-body h3 {
     font-family: var(--font-body);
     font-weight: 400;
@@ -199,7 +218,7 @@
 </div>
 
 <div class="viz-grid">
-    <div class="viz-card" data-tab="lorenz" tabindex="0" role="link" aria-label="Lorenz Attractor — Chaos Theory">
+    <div class="viz-card" data-tab="lorenz" data-category="chaos" tabindex="0" role="link" aria-label="Lorenz Attractor — Chaos Theory">
         <canvas class="viz-thumb" id="thumb-lorenz" role="img" aria-label="Lorenz attractor preview"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Chaos Theory</span>
@@ -208,7 +227,7 @@
         </div>
     </div>
 
-    <div class="viz-card" data-tab="mobius" tabindex="0" role="link" aria-label="Mobius Strip — Topology">
+    <div class="viz-card" data-tab="mobius" data-category="topology" tabindex="0" role="link" aria-label="Mobius Strip — Topology">
         <canvas class="viz-thumb" id="thumb-mobius" role="img" aria-label="Mobius strip preview"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Topology</span>
@@ -217,7 +236,7 @@
         </div>
     </div>
 
-    <div class="viz-card" data-tab="klein" tabindex="0" role="link" aria-label="Klein Bottle — Topology">
+    <div class="viz-card" data-tab="klein" data-category="topology" tabindex="0" role="link" aria-label="Klein Bottle — Topology">
         <canvas class="viz-thumb" id="thumb-klein" role="img" aria-label="Klein bottle preview"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Topology</span>
@@ -226,7 +245,7 @@
         </div>
     </div>
 
-    <div class="viz-card" data-tab="sierpinski" tabindex="0" role="link" aria-label="Sierpinski Triangle — Fractal">
+    <div class="viz-card" data-tab="sierpinski" data-category="fractal" tabindex="0" role="link" aria-label="Sierpinski Triangle — Fractal">
         <canvas class="viz-thumb" id="thumb-sierpinski" role="img" aria-label="Sierpinski triangle preview"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Fractal</span>
@@ -235,7 +254,7 @@
         </div>
     </div>
 
-    <div class="viz-card" data-tab="mandelbrot" tabindex="0" role="link" aria-label="Mandelbrot Set — Fractal">
+    <div class="viz-card" data-tab="mandelbrot" data-category="fractal" tabindex="0" role="link" aria-label="Mandelbrot Set — Fractal">
         <canvas class="viz-thumb" id="thumb-mandelbrot" role="img" aria-label="Mandelbrot set preview"></canvas>
         <div class="viz-card-body">
             <span class="viz-tag">Fractal</span>
