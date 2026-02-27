@@ -1265,11 +1265,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         var SUPABASE_URL = 'https://fdtsktbzshndnwiububp.supabase.co';
         var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZkdHNrdGJ6c2huZG53aXVidWJwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE3MzYwNDIsImV4cCI6MjA4NzMxMjA0Mn0.p1QU_Krf76umAu92xZDfnYHmnXIOqCpn7k3s_EgbpP4';
+        var sb = null;
 
         var form = document.getElementById('feedback-form');
-        if (!form || typeof supabase === 'undefined') return;
-
-        var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        if (!form) return;
 
         form.addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -1282,6 +1281,16 @@
             msg.textContent = '';
             msg.className = 'feedback-msg';
 
+            // Wait for Supabase SDK if not loaded yet
+            if (typeof supabase === 'undefined') {
+                msg.textContent = 'Loading... please try again in a moment.';
+                msg.className = 'feedback-msg';
+                btn.disabled = false;
+                return;
+            }
+
+            if (!sb) sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
             var { error } = await sb.from('feedback').insert({
                 message: message,
                 category: document.getElementById('feedback-category').value,
@@ -1289,6 +1298,7 @@
             });
 
             if (error) {
+                console.error('Supabase feedback error:', error);
                 msg.textContent = 'Something went wrong. Try again later.';
                 msg.className = 'feedback-msg error';
             } else {
